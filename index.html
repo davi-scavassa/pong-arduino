@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050816">
+  <title>Neon Pong</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app">
+  <header><button class="brand" onclick="screen('menu')">◈ NEON PONG</button><span>ARDUINO + WEB</span></header>
+
+  <section id="menu" class="screen active">
+    <div class="panel hero">
+      <small>ARCADE LOCAL</small><h1>PONG</h1><p>Escolha um modo, prepare seu especial e domine a arena.</p>
+      <button onclick="start1p()">1 PLAYER <i>Enfrente a CPU</i></button>
+      <button onclick="start2p()">2 PLAYERS <i>Duelo local</i></button>
+      <button onclick="screen('records')">🏆 RECORDES <i>Ranking e estatísticas</i></button>
+    </div>
+  </section>
+
+  <section id="name1p" class="screen"><div class="panel narrow"><a onclick="screen('menu')">← Voltar</a><small>1 PLAYER • ETAPA 1</small><h2>Quem vai jogar?</h2><label>Nome do jogador</label><input id="p1name" maxlength="16" placeholder="Ex.: Davi" autocomplete="off"><button onclick="name1p()">CONTINUAR →</button></div></section>
+
+  <section id="name2p" class="screen"><div class="panel"><a onclick="screen('menu')">← Voltar</a><small>2 PLAYERS • ETAPA 1</small><h2>Identifiquem os jogadores</h2><div class="cols"><div><label>Player 1</label><input id="p1name2" maxlength="16" placeholder="Ex.: Davi" autocomplete="off"></div><div><label>Player 2</label><input id="p2name2" maxlength="16" placeholder="Ex.: Lucas" autocomplete="off"></div></div><button onclick="names2p()">CONTINUAR →</button></div></section>
+
+  <section id="difficulty" class="screen"><div class="panel"><a onclick="screen('name1p')">← Voltar</a><small>1 PLAYER • ETAPA 2</small><h2>Escolha a dificuldade</h2><div class="cards" id="diffs"><button onclick="pickDiff('FÁCIL',this)"><b>FÁCIL</b><i>CPU mais lenta e com mais erros.</i></button><button class="selected" onclick="pickDiff('MÉDIO',this)"><b>MÉDIO</b><i>Equilíbrio entre reação e falhas.</i></button><button onclick="pickDiff('DIFÍCIL',this)"><b>DIFÍCIL</b><i>CPU rápida e precisa.</i></button></div><button onclick="screen('special1p')">CONTINUAR →</button></div></section>
+
+  <section id="special1p" class="screen"><div class="panel"><a onclick="screen('difficulty')">← Voltar</a><small>1 PLAYER • ETAPA 3</small><h2><span id="specialName">PLAYER 1</span>, escolha seu especial</h2><div class="cards specials" id="s1"><button class="selected" onclick="pickSpecial('p1','BOLA RÁPIDA',this)">⚡<b>BOLA RÁPIDA</b><i>Acelera o próximo retorno.</i></button><button onclick="pickSpecial('p1','RAQUETE MAIOR',this)">↕<b>RAQUETE MAIOR</b><i>Aumenta sua área de defesa.</i></button><button onclick="pickSpecial('p1','DEFESA EXTRA',this)">🛡<b>DEFESA EXTRA</b><i>Cria uma proteção temporária.</i></button></div><button onclick="roulette()">SORTEAR ESPECIAL DA CPU ✦</button></div></section>
+
+  <section id="roulette" class="screen"><div class="panel narrow center"><small>1 PLAYER • ETAPA 4</small><h2>Especial da CPU</h2><p>A CPU recebe o especial por sorteio.</p><div class="roulette" id="rouletteValue">?</div><strong id="rouletteStatus">SORTEANDO...</strong><button id="rouletteGo" class="hidden" onclick="ready1p()">CONTINUAR →</button></div></section>
+
+  <section id="specialP1" class="screen"><div class="panel"><a onclick="screen('name2p')">← Voltar</a><small>2 PLAYERS • ETAPA 2</small><h2><span id="p1title">PLAYER 1</span>, escolha seu especial</h2><div class="cards specials"><button class="selected" onclick="pickSpecial('p1','BOLA RÁPIDA',this)">⚡<b>BOLA RÁPIDA</b></button><button onclick="pickSpecial('p1','RAQUETE MAIOR',this)">↕<b>RAQUETE MAIOR</b></button><button onclick="pickSpecial('p1','DEFESA EXTRA',this)">🛡<b>DEFESA EXTRA</b></button></div><button onclick="screen('specialP2')">PASSAR PARA O PLAYER 2 →</button></div></section>
+
+  <section id="specialP2" class="screen"><div class="panel"><a onclick="screen('specialP1')">← Voltar</a><small>2 PLAYERS • ETAPA 3</small><h2><span id="p2title">PLAYER 2</span>, escolha seu especial</h2><div class="cards specials"><button class="selected" onclick="pickSpecial('p2','BOLA RÁPIDA',this)">⚡<b>BOLA RÁPIDA</b></button><button onclick="pickSpecial('p2','RAQUETE MAIOR',this)">↕<b>RAQUETE MAIOR</b></button><button onclick="pickSpecial('p2','DEFESA EXTRA',this)">🛡<b>DEFESA EXTRA</b></button></div><button onclick="ready2p()">VER CONFRONTO →</button></div></section>
+
+  <section id="ready" class="screen"><div class="panel center"><small id="readyMode">PARTIDA</small><h2>Preparados?</h2><p>Primeiro a marcar 5 pontos vence.</p><div class="versus"><div><em>PLAYER 1</em><b id="r1">P1</b><span id="rs1">⚡ BOLA RÁPIDA</span></div><strong>VS</strong><div><em id="r2type">CPU</em><b id="r2">CPU</b><span id="rs2">🛡 DEFESA EXTRA</span></div></div><button onclick="startGame()">INICIAR PARTIDA ▶</button></div></section>
+
+  <section id="game" class="screen"><div class="game"><div class="score"><div><span id="g1">P1</span><b id="score1">0</b></div><strong>VS</strong><div><b id="score2">0</b><span id="g2">CPU</span></div></div><div class="arena"><div class="line"></div><div class="paddle left"></div><div class="ball"></div><div class="paddle right"></div><div class="hud leftHud"><b>B1</b><span id="gs1">⚡ BOLA RÁPIDA</span></div><div class="hud rightHud"><b id="rightBtn">AUTO</b><span id="gs2">🛡 DEFESA EXTRA</span></div></div><div class="controls"><button onclick="pauseGame()">Ⅱ B2 • PAUSE</button><button onclick="victory()">prévia da tela final →</button></div></div></section>
+
+  <section id="pause" class="screen"><div class="panel narrow center"><small>PARTIDA PAUSADA</small><h2>PAUSE</h2><button onclick="screen('game')">CONTINUAR • B2</button><button onclick="startGame()">REINICIAR PARTIDA</button><button onclick="screen('menu')">VOLTAR AO MENU</button></div></section>
+
+  <section id="victory" class="screen"><div class="panel center"><div class="crown">♛</div><small>FIM DE PARTIDA</small><h2><span id="winner">PLAYER 1</span> VENCEU!</h2><div class="final"><b>5</b><span>×</span><b>3</b></div><p id="finalInfo"></p><button onclick="startGame()">JOGAR NOVAMENTE</button><button onclick="screen('menu')">VOLTAR AO MENU</button></div></section>
+
+  <section id="records" class="screen"><div class="panel"><a onclick="screen('menu')">← Voltar</a><small>RANKING</small><h2>🏆 Recordes</h2><p>Dados demonstrativos. O banco real será conectado depois.</p><div class="tabs"><button onclick="records('1P',this)" class="selected">1 PLAYER</button><button onclick="records('2P',this)">2 PLAYERS</button></div><div id="ranking" class="ranking"></div></div></section>
+</main>
+<script src="script.js"></script>
+</body>
+</html>
