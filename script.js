@@ -41,6 +41,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const target = document.getElementById(id);
   if (target) target.classList.add('active');
+  if (id === 'menu') updateArduinoMenuSelection();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -279,15 +280,16 @@ function renderRecords(mode = '1P') {
 }
 
 // ============================================================
-// ARDUINO / WEB SERIAL — ETAPA DE TESTE
-// Nesta etapa o site APENAS lê e mostra os dados recebidos.
-// Ainda não movimenta as raquetes nem controla os menus.
+// ARDUINO / WEB SERIAL — ETAPA 2
+// O site lê o Arduino e usa apenas o Joystick 1 + B1/B2 no menu.
+// Ainda NÃO controla raquetes, especiais ou a partida.
 // ============================================================
 
 let serialPort = null;
 let serialReader = null;
 let serialKeepReading = false;
 let serialBuffer = '';
+let arduinoMenuIndex = 0;
 
 const arduinoState = {
   p1: 'PARADO',
@@ -303,7 +305,9 @@ function initSerialPanel() {
     .serial-panel{position:fixed;right:18px;bottom:18px;width:min(360px,calc(100vw - 36px));z-index:9999;border:1px solid rgba(118,148,220,.22);border-radius:18px;background:rgba(5,11,26,.94);box-shadow:0 20px 55px rgba(0,0,0,.45);backdrop-filter:blur(18px);padding:14px;color:#f4f7ff;font-family:inherit}
     .serial-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.serial-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;letter-spacing:.08em}.serial-dot{width:9px;height:9px;border-radius:50%;background:#6d7890;box-shadow:0 0 0 4px rgba(109,120,144,.08)}.serial-panel.connected .serial-dot{background:#57f287;box-shadow:0 0 14px rgba(87,242,135,.55)}
     .serial-connect{border:1px solid rgba(53,231,255,.25);border-radius:10px;background:rgba(53,231,255,.08);color:#35e7ff;padding:8px 10px;font-size:9px;font-weight:900;letter-spacing:.05em;cursor:pointer}.serial-connect:hover{border-color:#35e7ff}.serial-connect:disabled{opacity:.55;cursor:not-allowed}
-    .serial-status{font-size:9px;color:#7e8dab;margin-bottom:10px;line-height:1.4}.serial-status.error{color:#ff8f9f}.serial-values{display:grid;grid-template-columns:1fr 1fr;gap:7px}.serial-value{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 9px;border-radius:10px;background:rgba(18,28,55,.64);border:1px solid rgba(118,148,220,.1);font-size:9px}.serial-value span{color:#6f7f9d}.serial-value b{font-size:10px;color:#dfe9ff}.serial-value.active b{color:#35e7ff}.serial-value.button-active{border-color:rgba(87,242,135,.34);background:rgba(87,242,135,.06)}.serial-value.button-active b{color:#57f287}.serial-raw{margin-top:9px;padding:8px 9px;min-height:31px;border-radius:9px;background:#030711;border:1px solid rgba(118,148,220,.09);color:#71809d;font:8px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.serial-note{margin-top:8px;color:#596986;font-size:8px;line-height:1.4}.serial-toggle{display:none}@media(max-width:680px){.serial-panel{right:10px;bottom:10px;width:calc(100vw - 20px)}}
+    .serial-status{font-size:9px;color:#7e8dab;margin-bottom:10px;line-height:1.4}.serial-status.error{color:#ff8f9f}.serial-values{display:grid;grid-template-columns:1fr 1fr;gap:7px}.serial-value{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 9px;border-radius:10px;background:rgba(18,28,55,.64);border:1px solid rgba(118,148,220,.1);font-size:9px}.serial-value span{color:#6f7f9d}.serial-value b{font-size:10px;color:#dfe9ff}.serial-value.active b{color:#35e7ff}.serial-value.button-active{border-color:rgba(87,242,135,.34);background:rgba(87,242,135,.06)}.serial-value.button-active b{color:#57f287}.serial-raw{margin-top:9px;padding:8px 9px;min-height:31px;border-radius:9px;background:#030711;border:1px solid rgba(118,148,220,.09);color:#71809d;font:8px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.serial-note{margin-top:8px;color:#596986;font-size:8px;line-height:1.4}.serial-toggle{display:none}
+    .menu-action.arduino-selected{border-color:#35e7ff!important;box-shadow:0 0 0 1px rgba(53,231,255,.18),0 0 28px rgba(53,231,255,.14)!important;transform:translateX(8px)}
+    @media(max-width:680px){.serial-panel{right:10px;bottom:10px;width:calc(100vw - 20px)}}
   `;
   document.head.appendChild(style);
 
@@ -324,7 +328,7 @@ function initSerialPanel() {
       <div class="serial-value" id="serialB3"><span>B3</span><b>0</b></div>
     </div>
     <div class="serial-raw" id="serialRaw">Aguardando dados...</div>
-    <div class="serial-note">Teste atual: apenas leitura. Nenhum comando do Arduino controla o jogo ainda.</div>
+    <div class="serial-note">Etapa atual: J1 navega no menu • B2 confirma • B1 volta. O jogo ainda não é controlado pelo Arduino.</div>
   `;
   document.body.appendChild(panel);
 
@@ -333,7 +337,7 @@ function initSerialPanel() {
 
   if (!('serial' in navigator)) {
     button.disabled = true;
-    setSerialStatus('Este navegador não oferece Web Serial. Use Chrome ou Edge.', true);
+    setSerialStatus('Este navegador não oferece acesso à porta serial.', true);
   }
 
   navigator.serial?.addEventListener('disconnect', event => {
@@ -347,7 +351,7 @@ async function connectArduino() {
   const button = document.getElementById('serialConnectBtn');
 
   if (!('serial' in navigator)) {
-    setSerialStatus('Web Serial indisponível neste navegador. Use Chrome ou Edge.', true);
+    setSerialStatus('Web Serial indisponível neste navegador.', true);
     return;
   }
 
@@ -446,6 +450,8 @@ function processArduinoLine(line) {
     return;
   }
 
+  const previousState = { ...arduinoState };
+
   arduinoState.p1 = data.P1;
   arduinoState.p2 = data.P2;
   arduinoState.b1 = Number(data.B1);
@@ -458,7 +464,63 @@ function processArduinoLine(line) {
   updateSerialValue('serialB2', arduinoState.b2, arduinoState.b2 === 1, true);
   updateSerialValue('serialB3', arduinoState.b3, arduinoState.b3 === 1, true);
 
+  handleArduinoMenuControls(previousState);
   setSerialStatus('Arduino conectado • dados chegando normalmente.');
+}
+
+function getArduinoMenuActions() {
+  return [...document.querySelectorAll('#menu .menu-action')];
+}
+
+function updateArduinoMenuSelection() {
+  const actions = getArduinoMenuActions();
+  if (!actions.length) return;
+
+  arduinoMenuIndex = Math.max(0, Math.min(arduinoMenuIndex, actions.length - 1));
+  actions.forEach((button, index) => {
+    button.classList.toggle('arduino-selected', index === arduinoMenuIndex);
+  });
+}
+
+function moveArduinoMenu(direction) {
+  const actions = getArduinoMenuActions();
+  if (!actions.length) return;
+
+  arduinoMenuIndex = (arduinoMenuIndex + direction + actions.length) % actions.length;
+  updateArduinoMenuSelection();
+}
+
+function handleArduinoMenuControls(previousState) {
+  const activeScreen = document.querySelector('.screen.active');
+  if (!activeScreen) return;
+
+  const currentScreen = activeScreen.id;
+
+  if (currentScreen === 'menu') {
+    // Só muda uma opção quando o joystick sai do centro.
+    // Para mover de novo, basta voltar o joystick para PARADO e mover novamente.
+    if (previousState.p1 === 'PARADO' && arduinoState.p1 === 'CIMA') {
+      moveArduinoMenu(-1);
+    }
+
+    if (previousState.p1 === 'PARADO' && arduinoState.p1 === 'BAIXO') {
+      moveArduinoMenu(1);
+    }
+
+    // B2 confirma apenas no menu principal nesta etapa.
+    if (previousState.b2 === 0 && arduinoState.b2 === 1) {
+      const selected = getArduinoMenuActions()[arduinoMenuIndex];
+      selected?.click();
+      return;
+    }
+  }
+
+  // B1 volta uma tela. Se a tela não tiver botão Voltar, retorna ao menu.
+  if (currentScreen !== 'menu' && previousState.b1 === 0 && arduinoState.b1 === 1) {
+    const backButton = activeScreen.querySelector('.back');
+    if (backButton) backButton.click();
+    else showScreen('menu');
+  }
 }
 
 function updateSerialValue(id, value, active = false, isButton = false) {
@@ -512,3 +574,4 @@ function handleSerialDisconnected(message) {
 
 renderRecords('1P');
 initSerialPanel();
+updateArduinoMenuSelection();
