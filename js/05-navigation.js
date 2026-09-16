@@ -33,6 +33,30 @@ function navItems() {
   return model ? model.items() : [];
 }
 
+/*
+  Decide automaticamente qual eixo usar de acordo com o layout real da tela.
+  - opções lado a lado -> eixo X do Joystick 1
+  - opções empilhadas -> eixo Y do Joystick 1
+  A roda de letras também é horizontal.
+*/
+function navAxisForCurrentScreen() {
+  if (currentScreen === 'name1p' || currentScreen === 'name2p') return 'horizontal';
+
+  const items = navItems().filter(el => {
+    const style = getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+
+  if (items.length < 2) return 'vertical';
+
+  const first = items[0].getBoundingClientRect();
+  const second = items[1].getBoundingClientRect();
+  const dx = Math.abs(second.left - first.left);
+  const dy = Math.abs(second.top - first.top);
+
+  return dx > dy ? 'horizontal' : 'vertical';
+}
+
 function updateNavFocus() {
   qsa('.nav-focus').forEach(el => el.classList.remove('nav-focus'));
 
@@ -108,8 +132,8 @@ function buildWheelIfNeeded(screenId) {
     </div>
     <div class="wheel-track" id="wheelTrack"></div>
     <div class="wheel-hint">
-      <b>Joystick 1</b> escolhe a letra • <b>B2</b> confirma • escolha <b>OK</b> para avançar<br>
-      <b>␣</b> espaço • <b>⌫</b> apagar • <b>B1</b> apaga/volta. O teclado do PC também funciona.
+      <b>Joystick 1 ← →</b> escolhe a letra • <b>clique J1</b> confirma • escolha <b>OK</b> para avançar<br>
+      <b>␣</b> espaço • <b>⌫</b> apagar • <b>clique J2</b> apaga/volta. O teclado do PC também funciona.
     </div>
   `;
   renderWheel();
@@ -168,4 +192,3 @@ function confirmWheel() {
   if (field.value.length >= 16) return;
   field.value += (char === '␣' ? ' ' : char);
 }
-
