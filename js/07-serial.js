@@ -37,11 +37,12 @@ function initSerialPanel() {
       <div class="serial-value" id="serialP1"><span>J1 Y</span><b>PARADO</b></div>
       <div class="serial-value" id="serialX1"><span>J1 X</span><b>PARADO</b></div>
       <div class="serial-value" id="serialP2"><span>J2 Y</span><b>PARADO</b></div>
+      <div class="serial-value" id="serialX2"><span>J2 X</span><b>PARADO</b></div>
       <div class="serial-value" id="serialJ1Click"><span>J1 CLICK</span><b>0</b></div>
       <div class="serial-value" id="serialJ2Click"><span>J2 CLICK</span><b>0</b></div>
     </div>
     <div class="serial-raw" id="serialRaw">Aguardando dados...</div>
-    <div class="serial-note">Menus empilhados usam J1 ↑↓ • menus lado a lado usam J1 ←→ • clique J1 confirma • clique J2 volta.</div>
+    <div class="serial-note">Cada jogador controla apenas as próprias seleções: P1 usa J1 e P2 usa J2. O outro joystick fica ignorado.</div>
   `;
   document.body.appendChild(panel);
 
@@ -147,11 +148,10 @@ async function readArduinoSerial() {
 }
 
 /**
- * Formato atual, sem botões externos e com eixo X do Joystick 1:
- *   P1:CIMA|X1:ESQUERDA|P2:PARADO|J1:0|J2:0
+ * Formato atual, sem botões externos e com X/Y dos dois joysticks:
+ *   P1:CIMA|X1:ESQUERDA|P2:PARADO|X2:DIREITA|J1:0|J2:0
  *
- * X1 é opcional para manter compatibilidade com sketches anteriores.
- * Também continua aceitando o formato antigo com B1/B2/B3.
+ * X1 e X2 são opcionais para manter compatibilidade com sketches anteriores.
  */
 function processArduinoLine(line) {
   $('serialRaw').textContent = line;
@@ -168,8 +168,11 @@ function processArduinoLine(line) {
   const x1 = data.X1 === undefined
     ? { axis: 0, dir: 'PARADO' }
     : parseHorizontalAxis(data.X1);
+  const x2 = data.X2 === undefined
+    ? { axis: 0, dir: 'PARADO' }
+    : parseHorizontalAxis(data.X2);
 
-  if (!a1 || !a2 || !x1) {
+  if (!a1 || !a2 || !x1 || !x2) {
     setSerialStatus('Dados recebidos, mas o formato não bate com o esperado.', true);
     return;
   }
@@ -177,9 +180,11 @@ function processArduinoLine(line) {
   serialInput.axis1 = a1.axis;
   serialInput.axis2 = a2.axis;
   serialInput.axisX1 = x1.axis;
+  serialInput.axisX2 = x2.axis;
   serialInput.dir1 = a1.dir;
   serialInput.dir2 = a2.dir;
   serialInput.x1 = x1.dir;
+  serialInput.x2 = x2.dir;
 
   const hasJoystickClicks = ['0', '1'].includes(data.J1) && ['0', '1'].includes(data.J2);
 
@@ -187,16 +192,16 @@ function processArduinoLine(line) {
     const j1 = data.J1 === '1' ? 1 : 0;
     const j2 = data.J2 === '1' ? 1 : 0;
 
-    // Fora da partida: J1 confirma e J2 volta.
-    // 1P na partida: J1 = especial P1 e J2 = pausa.
-    // 2P na partida: J1 = especial P1 e J2 = especial P2.
     if (currentScreen === 'game') {
-      serialInput.b1 = j1;
-      serialInput.b2 = state.mode === '1P' ? j2 : 0;
-      serialInput.b3 = state.mode === '2P' ? j2 : 0;
+      // Durante a partida os dois controles ficam ativos.
+      serialInput.b1 = j1; // especial P1
+      serialInput.b2 = state.mode === '1P' ? j2 : 0; // pausa no 1P
+      serialInput.b3 = state.mode === '2P' ? j2 : 0; // especial P2 no 2P
     } else {
-      serialInput.b1 = j2;
-      serialInput.b2 = j1;
+      // Fora da partida, somente o dono da seleção atual pode confirmar.
+      const player = selectionPlayerForCurrentScreen();
+      serialInput.b1 = 0;
+      serialInput.b2 = player === 2 ? j2 : j1;
       serialInput.b3 = 0;
     }
 
@@ -220,6 +225,7 @@ function processArduinoLine(line) {
   updateSerialValue('serialP1', a1.dir, a1.dir !== 'PARADO');
   updateSerialValue('serialX1', x1.dir, x1.dir !== 'PARADO');
   updateSerialValue('serialP2', a2.dir, a2.dir !== 'PARADO');
+  updateSerialValue('serialX2', x2.dir, x2.dir !== 'PARADO');
 
   setSerialStatus('Arduino conectado • dados chegando normalmente.');
 }
@@ -288,8 +294,9 @@ function handleSerialDisconnected(message) {
   serialPort = null;
   serialBuffer = '';
   serialInput.dir1 = serialInput.dir2 = 'PARADO';
-  serialInput.x1 = 'PARADO';
-  serialInput.axis1 = serialInput.axis2 = serialInput.axisX1 = 0;
+  serialInput.x1 = serialInput.x2 = 'PARADO';
+  serialInput.axis1 = serialInput.axis2 = 0;
+  serialInput.axisX1 = serialInput.axisX2 = 0;
   serialInput.b1 = serialInput.b2 = serialInput.b3 = 0;
 
   $('serialPanel')?.classList.remove('connected');
