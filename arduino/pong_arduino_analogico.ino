@@ -1,75 +1,67 @@
 /* ============================================================
    NEON PONG • Sketch OPCIONAL (movimento suave)
 
-   MESMAS PORTAS E LIGAÇÕES do sketch principal — não precisa
-   mexer em nada no protoboard. A única diferença é que ele
-   manda o valor cru do joystick (0 a 1023) em vez de
-   CIMA/BAIXO/PARADO. Com isso a raquete anda proporcional:
-   empurrando pouco ela vai devagar, empurrando tudo ela voa.
+   Ligações:
+   J1: A0 = X, A1 = Y, D2 = clique SW
+   J2: A2 = X, A3 = Y, D3 = clique SW
 
-   O site aceita os dois formatos automaticamente.
-   Use este aqui se quiser o controle mais gostoso na feira.
+   O site aceita este formato automaticamente.
 
    Formato enviado:
-   P1:512|P2:498|B1:0|B2:0|B3:0
+   P1:512|X1:512|P2:498|X2:512|J1:0|J2:0
    ============================================================ */
 
+const int joy1X = A0;
 const int joy1Y = A1;
+const int joy2X = A2;
 const int joy2Y = A3;
 
-const int botao1 = 2;
-const int botao2 = 3;
-const int botao3 = 4;
+const int clickJoy1 = 2;
+const int clickJoy2 = 3;
 
-// Guarda se o botão foi pressionado entre um envio e outro,
-// assim nenhum toque rápido se perde.
-bool travou1 = false;
-bool travou2 = false;
-bool travou3 = false;
+bool travouJ1 = false;
+bool travouJ2 = false;
 
 unsigned long ultimoEnvio = 0;
-const unsigned long intervalo = 20;   // 50 envios por segundo
+const unsigned long intervalo = 20;
 
 void setup() {
   Serial.begin(9600);
 
-  pinMode(botao1, INPUT_PULLUP);
-  pinMode(botao2, INPUT_PULLUP);
-  pinMode(botao3, INPUT_PULLUP);
+  pinMode(clickJoy1, INPUT_PULLUP);
+  pinMode(clickJoy2, INPUT_PULLUP);
 }
 
 void loop() {
-
-  // ---------- LÊ OS BOTÕES O TEMPO TODO ----------
-  if (digitalRead(botao1) == LOW) travou1 = true;
-  if (digitalRead(botao2) == LOW) travou2 = true;
-  if (digitalRead(botao3) == LOW) travou3 = true;
+  if (digitalRead(clickJoy1) == LOW) travouJ1 = true;
+  if (digitalRead(clickJoy2) == LOW) travouJ2 = true;
 
   if (millis() - ultimoEnvio < intervalo) return;
   ultimoEnvio = millis();
 
-  // ---------- LÊ OS JOYSTICKS ----------
   int valorP1 = analogRead(joy1Y);
+  int valorX1 = analogRead(joy1X);
   int valorP2 = analogRead(joy2Y);
+  int valorX2 = analogRead(joy2X);
 
-  // ---------- ENVIA PARA O COMPUTADOR ----------
   Serial.print("P1:");
   Serial.print(valorP1);
+
+  Serial.print("|X1:");
+  Serial.print(valorX1);
 
   Serial.print("|P2:");
   Serial.print(valorP2);
 
-  Serial.print("|B1:");
-  Serial.print(travou1 ? 1 : 0);
+  Serial.print("|X2:");
+  Serial.print(valorX2);
 
-  Serial.print("|B2:");
-  Serial.print(travou2 ? 1 : 0);
+  Serial.print("|J1:");
+  Serial.print(travouJ1 ? 1 : 0);
 
-  Serial.print("|B3:");
-  Serial.println(travou3 ? 1 : 0);
+  Serial.print("|J2:");
+  Serial.println(travouJ2 ? 1 : 0);
 
-  // Só zera se o botão já tiver sido solto de verdade.
-  if (digitalRead(botao1) == HIGH) travou1 = false;
-  if (digitalRead(botao2) == HIGH) travou2 = false;
-  if (digitalRead(botao3) == HIGH) travou3 = false;
+  if (digitalRead(clickJoy1) == HIGH) travouJ1 = false;
+  if (digitalRead(clickJoy2) == HIGH) travouJ2 = false;
 }
