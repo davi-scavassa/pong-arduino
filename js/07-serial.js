@@ -36,12 +36,11 @@ function initSerialPanel() {
     <div class="serial-values">
       <div class="serial-value" id="serialP1"><span>J1</span><b>PARADO</b></div>
       <div class="serial-value" id="serialP2"><span>J2</span><b>PARADO</b></div>
-      <div class="serial-value" id="serialB1"><span>B1</span><b>0</b></div>
-      <div class="serial-value" id="serialB2"><span>B2</span><b>0</b></div>
-      <div class="serial-value" id="serialB3"><span>B3</span><b>0</b></div>
+      <div class="serial-value" id="serialJ1Click"><span>J1 CLICK</span><b>0</b></div>
+      <div class="serial-value" id="serialJ2Click"><span>J2 CLICK</span><b>0</b></div>
     </div>
     <div class="serial-raw" id="serialRaw">Aguardando dados...</div>
-    <div class="serial-note">Sem Arduino dá para testar no teclado: W/S = P1, ↑/↓ = P2, Enter = B2, Esc = B1, M = B3.</div>
+    <div class="serial-note">J1 clique = confirmar / especial P1 • J2 clique = voltar / pausa / especial P2.</div>
   `;
   document.body.appendChild(panel);
 
@@ -147,9 +146,10 @@ async function readArduinoSerial() {
 }
 
 /**
- * Aceita os dois formatos:
- *   P1:CIMA|P2:PARADO|B1:0|B2:0|B3:0   (sketch digital — o que você já tem)
- *   P1:512|P2:498|B1:0|B2:0|B3:0       (sketch analógico opcional, movimento suave)
+ * Formato atual, sem botões externos:
+ *   P1:CIMA|P2:PARADO|J1:0|J2:0
+ *
+ * Também continua aceitando o formato antigo com B1/B2/B3 por compatibilidade.
  */
 function processArduinoLine(line) {
   $('serialRaw').textContent = line;
@@ -172,15 +172,41 @@ function processArduinoLine(line) {
   serialInput.axis2 = a2.axis;
   serialInput.dir1 = a1.dir;
   serialInput.dir2 = a2.dir;
-  serialInput.b1 = data.B1 === '1' ? 1 : 0;
-  serialInput.b2 = data.B2 === '1' ? 1 : 0;
-  serialInput.b3 = data.B3 === '1' ? 1 : 0;
+
+  const hasJoystickClicks = ['0', '1'].includes(data.J1) && ['0', '1'].includes(data.J2);
+
+  if (hasJoystickClicks) {
+    const j1 = data.J1 === '1' ? 1 : 0;
+    const j2 = data.J2 === '1' ? 1 : 0;
+
+    // Reaproveita a lógica existente do jogo sem precisar reescrever tudo:
+    // fora da partida: J1 confirma e J2 volta;
+    // 1P na partida: J1 = especial P1 e J2 = pausa;
+    // 2P na partida: J1 = especial P1 e J2 = especial P2.
+    if (currentScreen === 'game') {
+      serialInput.b1 = j1;
+      serialInput.b2 = state.mode === '1P' ? j2 : 0;
+      serialInput.b3 = state.mode === '2P' ? j2 : 0;
+    } else {
+      serialInput.b1 = j2;
+      serialInput.b2 = j1;
+      serialInput.b3 = 0;
+    }
+
+    updateSerialValue('serialJ1Click', j1, j1 === 1, true);
+    updateSerialValue('serialJ2Click', j2, j2 === 1, true);
+  } else {
+    // Compatibilidade com o esquema antigo de 3 botões.
+    serialInput.b1 = data.B1 === '1' ? 1 : 0;
+    serialInput.b2 = data.B2 === '1' ? 1 : 0;
+    serialInput.b3 = data.B3 === '1' ? 1 : 0;
+
+    updateSerialValue('serialJ1Click', serialInput.b2, serialInput.b2 === 1, true);
+    updateSerialValue('serialJ2Click', serialInput.b1 || serialInput.b3, (serialInput.b1 || serialInput.b3) === 1, true);
+  }
 
   updateSerialValue('serialP1', a1.dir, a1.dir !== 'PARADO');
   updateSerialValue('serialP2', a2.dir, a2.dir !== 'PARADO');
-  updateSerialValue('serialB1', serialInput.b1, serialInput.b1 === 1, true);
-  updateSerialValue('serialB2', serialInput.b2, serialInput.b2 === 1, true);
-  updateSerialValue('serialB3', serialInput.b3, serialInput.b3 === 1, true);
 
   setSerialStatus('Arduino conectado • dados chegando normalmente.');
 }
