@@ -9,17 +9,18 @@ function navStep(delta) {
 
 function getNavigationCommand() {
   const axis = navAxisForCurrentScreen();
+  const player = selectionPlayerForCurrentScreen();
 
   if (axis === 'horizontal') {
     return {
-      dir: input.x1,
+      dir: player === 2 ? input.x2 : input.x1,
       previous: 'ESQUERDA',
       next: 'DIREITA'
     };
   }
 
   return {
-    dir: input.dir1,
+    dir: player === 2 ? input.dir2 : input.dir1,
     previous: 'CIMA',
     next: 'BAIXO'
   };
@@ -58,7 +59,14 @@ function onButton1() {
   if (currentScreen === 'name1p' || currentScreen === 'name2p') {
     const field = $(wheel.fields[wheel.fieldIndex]);
     if (field && field.value.length) { field.value = field.value.slice(0, -1); return; }
-    if (wheel.fieldIndex > 0) { wheel.fieldIndex--; renderWheel(); highlightField(); return; }
+    if (wheel.fieldIndex > 0) {
+      wheel.fieldIndex--;
+      wheel.index = 0;
+      navHoldDir = 'PARADO';
+      renderWheel();
+      highlightField();
+      return;
+    }
   }
 
   const fallbacks = {
@@ -121,6 +129,7 @@ function loop(now) {
   prevInput.dir1 = input.dir1;
   prevInput.dir2 = input.dir2;
   prevInput.x1 = input.x1;
+  prevInput.x2 = input.x2;
   prevInput.b1 = input.b1;
   prevInput.b2 = input.b2;
   prevInput.b3 = input.b3;
