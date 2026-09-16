@@ -34,13 +34,14 @@ function initSerialPanel() {
     </div>
     <div id="serialStatus" class="serial-status">Ainda não conectado. Feche o Monitor Serial da IDE antes de conectar.</div>
     <div class="serial-values">
-      <div class="serial-value" id="serialP1"><span>J1</span><b>PARADO</b></div>
-      <div class="serial-value" id="serialP2"><span>J2</span><b>PARADO</b></div>
+      <div class="serial-value" id="serialP1"><span>J1 Y</span><b>PARADO</b></div>
+      <div class="serial-value" id="serialX1"><span>J1 X</span><b>PARADO</b></div>
+      <div class="serial-value" id="serialP2"><span>J2 Y</span><b>PARADO</b></div>
       <div class="serial-value" id="serialJ1Click"><span>J1 CLICK</span><b>0</b></div>
       <div class="serial-value" id="serialJ2Click"><span>J2 CLICK</span><b>0</b></div>
     </div>
     <div class="serial-raw" id="serialRaw">Aguardando dados...</div>
-    <div class="serial-note">J1 clique = confirmar / especial P1 • J2 clique = voltar / pausa / especial P2.</div>
+    <div class="serial-note">Menus empilhados usam J1 ↑↓ • menus lado a lado usam J1 ←→ • clique J1 confirma • clique J2 volta.</div>
   `;
   document.body.appendChild(panel);
 
@@ -146,10 +147,11 @@ async function readArduinoSerial() {
 }
 
 /**
- * Formato atual, sem botões externos:
- *   P1:CIMA|P2:PARADO|J1:0|J2:0
+ * Formato atual, sem botões externos e com eixo X do Joystick 1:
+ *   P1:CIMA|X1:ESQUERDA|P2:PARADO|J1:0|J2:0
  *
- * Também continua aceitando o formato antigo com B1/B2/B3 por compatibilidade.
+ * X1 é opcional para manter compatibilidade com sketches anteriores.
+ * Também continua aceitando o formato antigo com B1/B2/B3.
  */
 function processArduinoLine(line) {
   $('serialRaw').textContent = line;
@@ -163,15 +165,21 @@ function processArduinoLine(line) {
 
   const a1 = parseAxis(data.P1);
   const a2 = parseAxis(data.P2);
-  if (!a1 || !a2) {
+  const x1 = data.X1 === undefined
+    ? { axis: 0, dir: 'PARADO' }
+    : parseHorizontalAxis(data.X1);
+
+  if (!a1 || !a2 || !x1) {
     setSerialStatus('Dados recebidos, mas o formato não bate com o esperado.', true);
     return;
   }
 
   serialInput.axis1 = a1.axis;
   serialInput.axis2 = a2.axis;
+  serialInput.axisX1 = x1.axis;
   serialInput.dir1 = a1.dir;
   serialInput.dir2 = a2.dir;
+  serialInput.x1 = x1.dir;
 
   const hasJoystickClicks = ['0', '1'].includes(data.J1) && ['0', '1'].includes(data.J2);
 
@@ -179,9 +187,8 @@ function processArduinoLine(line) {
     const j1 = data.J1 === '1' ? 1 : 0;
     const j2 = data.J2 === '1' ? 1 : 0;
 
-    // Reaproveita a lógica existente do jogo sem precisar reescrever tudo:
-    // fora da partida: J1 confirma e J2 volta;
-    // 1P na partida: J1 = especial P1 e J2 = pausa;
+    // Fora da partida: J1 confirma e J2 volta.
+    // 1P na partida: J1 = especial P1 e J2 = pausa.
     // 2P na partida: J1 = especial P1 e J2 = especial P2.
     if (currentScreen === 'game') {
       serialInput.b1 = j1;
@@ -202,10 +209,16 @@ function processArduinoLine(line) {
     serialInput.b3 = data.B3 === '1' ? 1 : 0;
 
     updateSerialValue('serialJ1Click', serialInput.b2, serialInput.b2 === 1, true);
-    updateSerialValue('serialJ2Click', serialInput.b1 || serialInput.b3, (serialInput.b1 || serialInput.b3) === 1, true);
+    updateSerialValue(
+      'serialJ2Click',
+      serialInput.b1 || serialInput.b3,
+      (serialInput.b1 || serialInput.b3) === 1,
+      true
+    );
   }
 
   updateSerialValue('serialP1', a1.dir, a1.dir !== 'PARADO');
+  updateSerialValue('serialX1', x1.dir, x1.dir !== 'PARADO');
   updateSerialValue('serialP2', a2.dir, a2.dir !== 'PARADO');
 
   setSerialStatus('Arduino conectado • dados chegando normalmente.');
@@ -220,13 +233,30 @@ function parseAxis(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
 
-  // 0..1023 -> -1..1 (perto de 0 = totalmente para cima)
   let axis = (n - 512) / 512;
   if (Math.abs(axis) < DEADZONE) axis = 0;
   else axis = Math.sign(axis) * ((Math.abs(axis) - DEADZONE) / (1 - DEADZONE));
   axis = clamp(axis, -1, 1);
 
   const dir = axis < -0.35 ? 'CIMA' : axis > 0.35 ? 'BAIXO' : 'PARADO';
+  return { axis, dir };
+}
+
+function parseHorizontalAxis(value) {
+  if (value === undefined) return null;
+  if (value === 'ESQUERDA') return { axis: -1, dir: 'ESQUERDA' };
+  if (value === 'DIREITA')  return { axis: 1,  dir: 'DIREITA' };
+  if (value === 'PARADO')   return { axis: 0,  dir: 'PARADO' };
+
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+
+  let axis = (n - 512) / 512;
+  if (Math.abs(axis) < DEADZONE) axis = 0;
+  else axis = Math.sign(axis) * ((Math.abs(axis) - DEADZONE) / (1 - DEADZONE));
+  axis = clamp(axis, -1, 1);
+
+  const dir = axis < -0.35 ? 'ESQUERDA' : axis > 0.35 ? 'DIREITA' : 'PARADO';
   return { axis, dir };
 }
 
@@ -258,7 +288,8 @@ function handleSerialDisconnected(message) {
   serialPort = null;
   serialBuffer = '';
   serialInput.dir1 = serialInput.dir2 = 'PARADO';
-  serialInput.axis1 = serialInput.axis2 = 0;
+  serialInput.x1 = 'PARADO';
+  serialInput.axis1 = serialInput.axis2 = serialInput.axisX1 = 0;
   serialInput.b1 = serialInput.b2 = serialInput.b3 = 0;
 
   $('serialPanel')?.classList.remove('connected');
@@ -266,4 +297,3 @@ function handleSerialDisconnected(message) {
   if (button) { button.disabled = false; button.textContent = 'CONECTAR ARDUINO'; }
   setSerialStatus(message);
 }
-
