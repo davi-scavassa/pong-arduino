@@ -7,19 +7,39 @@ function navStep(delta) {
   else moveNav(delta);
 }
 
+function getNavigationCommand() {
+  const axis = navAxisForCurrentScreen();
+
+  if (axis === 'horizontal') {
+    return {
+      dir: input.x1,
+      previous: 'ESQUERDA',
+      next: 'DIREITA'
+    };
+  }
+
+  return {
+    dir: input.dir1,
+    previous: 'CIMA',
+    next: 'BAIXO'
+  };
+}
+
 function handleNavigation(now) {
-  const dir = input.dir1;
+  const command = getNavigationCommand();
+  const dir = command.dir;
 
   if (dir !== navHoldDir) {
     navHoldDir = dir;
     navHoldSince = now;
     navLastRepeat = now;
-    if (dir === 'CIMA') navStep(-1);
-    if (dir === 'BAIXO') navStep(1);
+
+    if (dir === command.previous) navStep(-1);
+    if (dir === command.next) navStep(1);
   } else if (dir !== 'PARADO') {
     if (now - navHoldSince > 420 && now - navLastRepeat > 170) {
       navLastRepeat = now;
-      navStep(dir === 'CIMA' ? -1 : 1);
+      navStep(dir === command.previous ? -1 : 1);
     }
   }
 }
@@ -66,7 +86,7 @@ function onButton2() {
 function onButton3() {
   if (currentScreen === 'game') {
     if (state.mode === '2P') activateSpecial('p2');
-    else startMatch();                 // 1 player: B3 reinicia a partida
+    else startMatch();
     return;
   }
   if (currentScreen === 'menu') return;
@@ -100,6 +120,7 @@ function loop(now) {
 
   prevInput.dir1 = input.dir1;
   prevInput.dir2 = input.dir2;
+  prevInput.x1 = input.x1;
   prevInput.b1 = input.b1;
   prevInput.b2 = input.b2;
   prevInput.b3 = input.b3;
@@ -112,4 +133,3 @@ window.addEventListener('resize', () => {
   game.p2.y = clamp(game.p2.y, 0, dims.H);
   game.ball.y = clamp(game.ball.y, 0, dims.H);
 });
-
