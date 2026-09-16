@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#050816" />
-  <title>Neon Pong • Visual V2.2</title>
+  <title>Neon Pong • Arduino V3.0</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -18,7 +18,7 @@
         <span class="brand-icon">◈</span>
         <span>NEON PONG</span>
       </button>
-      <div class="status-pill"><span></span> VISUAL • V2.2</div>
+      <div class="status-pill"><span></span> JOGO • V3.0</div>
     </header>
 
     <!-- MENU -->
@@ -93,6 +93,8 @@
           <input id="player1Name" maxlength="16" placeholder="Ex.: Davi" autocomplete="off" />
         </div>
 
+        <div class="wheel-box" id="wheel1p" data-fields="player1Name"></div>
+
         <button class="primary full" onclick="go1PName()">CONTINUAR <span>→</span></button>
       </div>
     </section>
@@ -116,6 +118,8 @@
             <div class="input-wrap p2-input"><span>2</span><input id="p2Name2" maxlength="16" placeholder="Ex.: Lucas" autocomplete="off" /></div>
           </div>
         </div>
+
+        <div class="wheel-box" id="wheel2p" data-fields="p1Name2,p2Name2"></div>
 
         <button class="primary full" onclick="go2PNames()">CONTINUAR <span>→</span></button>
       </div>
@@ -316,9 +320,12 @@
           <div class="arena-corner corner-right" id="arenaP2Label">CPU</div>
           <div class="center-line"></div>
           <div class="center-circle"></div>
-          <div class="paddle left"></div>
-          <div class="ball"><span></span></div>
-          <div class="paddle right"></div>
+          <div class="shield shield-left" id="shieldLeft"></div>
+          <div class="shield shield-right" id="shieldRight"></div>
+          <div class="paddle left" id="paddleLeft"></div>
+          <div class="ball" id="ball"><span></span></div>
+          <div class="paddle right" id="paddleRight"></div>
+          <div class="goal-flash" id="goalFlash"></div>
 
           <div class="countdown-overlay hidden" id="countdownOverlay">
             <small>PREPARE-SE</small>
@@ -331,8 +338,8 @@
               <b>B1</b>
             </div>
             <strong id="gameP1Special">⚡ BOLA RÁPIDA</strong>
-            <div class="charge"><i></i></div>
-            <div class="special-status"><span>● PRONTO</span><small>1 USO</small></div>
+            <div class="charge"><i id="p1Charge"></i></div>
+            <div class="special-status"><span id="p1SpecialStatus">● PRONTO</span><small id="p1SpecialUses">1 USO</small></div>
           </div>
 
           <div class="special-hud right-special">
@@ -341,8 +348,8 @@
               <span class="hud-owner" id="rightSpecialOwner">ESPECIAL CPU</span>
             </div>
             <strong id="gameP2Special">🛡 DEFESA EXTRA</strong>
-            <div class="charge"><i></i></div>
-            <div class="special-status"><small>1 USO</small><span>● PRONTO</span></div>
+            <div class="charge"><i id="p2Charge"></i></div>
+            <div class="special-status"><small id="p2SpecialUses">1 USO</small><span id="p2SpecialStatus">● PRONTO</span></div>
           </div>
         </div>
 
@@ -350,7 +357,7 @@
           <div><b>B1</b><span>Especial P1</span></div>
           <div class="main-control"><b>B2</b><span>Pause / Continuar</span></div>
           <div id="footerP2Control"><b>B3</b><span>Especial P2</span></div>
-          <button class="demo-link" onclick="showVictoryPreview()">prévia da tela final →</button>
+          <div class="restart-control"><b>B3</b><span id="footerB3Label">Reiniciar partida</span></div>
         </div>
       </div>
     </section>
@@ -384,9 +391,9 @@
         <p class="muted">A partida terminou. O resultado abaixo já está pronto para ser enviado ao sistema de recordes quando o backend entrar.</p>
 
         <div class="final-score">
-          <div><span id="finalP1">PLAYER 1</span><b>5</b></div>
+          <div><span id="finalP1">PLAYER 1</span><b id="finalScore1">5</b></div>
           <i>×</i>
-          <div><b>3</b><span id="finalP2">CPU</span></div>
+          <div><b id="finalScore2">3</b><span id="finalP2">CPU</span></div>
         </div>
 
         <div class="final-details">
