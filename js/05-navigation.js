@@ -20,6 +20,25 @@ const navModel = {
   cpuRoulette: { items: () => qsa('#cpuRoulette #cpuContinue:not(.hidden)'), type: 'list' }
 };
 
+/*
+  Define quem pode controlar a seleção atual.
+
+  Regra:
+  - telas/etapas do Player 1 -> somente Joystick 1
+  - telas/etapas do Player 2 -> somente Joystick 2
+  - telas gerais (menu, ready, pause, vitória, recordes) -> Joystick 1
+  - nome 2P: enquanto digita o nome do P1 usa J1; ao passar para o P2 usa J2
+*/
+function selectionPlayerForCurrentScreen() {
+  if (state.mode !== '2P') return 1;
+
+  if (currentScreen === 'special2pP2') return 2;
+
+  if (currentScreen === 'name2p' && wheel.fieldIndex === 1) return 2;
+
+  return 1;
+}
+
 function initialNavIndex(screenId) {
   const model = navModel[screenId];
   if (!model || model.type !== 'choice') return 0;
@@ -35,9 +54,9 @@ function navItems() {
 
 /*
   Decide automaticamente qual eixo usar de acordo com o layout real da tela.
-  - opções lado a lado -> eixo X do Joystick 1
-  - opções empilhadas -> eixo Y do Joystick 1
-  A roda de letras também é horizontal.
+  - opções lado a lado -> eixo X do jogador ativo
+  - opções empilhadas -> eixo Y do jogador ativo
+  - roda de letras -> horizontal
 */
 function navAxisForCurrentScreen() {
   if (currentScreen === 'name1p' || currentScreen === 'name2p') return 'horizontal';
@@ -131,18 +150,27 @@ function buildWheelIfNeeded(screenId) {
       <b id="wheelField">${fieldLabel()}</b>
     </div>
     <div class="wheel-track" id="wheelTrack"></div>
-    <div class="wheel-hint">
-      <b>Joystick 1 ← →</b> escolhe a letra • <b>clique J1</b> confirma • escolha <b>OK</b> para avançar<br>
-      <b>␣</b> espaço • <b>⌫</b> apagar • <b>clique J2</b> apaga/volta. O teclado do PC também funciona.
-    </div>
+    <div class="wheel-hint" id="wheelHint"></div>
   `;
   renderWheel();
   highlightField();
+  updateWheelHint();
 }
 
 function fieldLabel() {
   if (wheel.fields.length < 2) return 'NOME DO JOGADOR';
   return wheel.fieldIndex === 0 ? 'PLAYER 1' : 'PLAYER 2';
+}
+
+function updateWheelHint() {
+  const hint = $('wheelHint');
+  if (!hint) return;
+
+  const player = selectionPlayerForCurrentScreen();
+  hint.innerHTML = `
+    <b>Joystick ${player} ← →</b> escolhe a letra • <b>clique J${player}</b> confirma • escolha <b>OK</b> para avançar<br>
+    <b>␣</b> espaço • <b>⌫</b> apagar. Enquanto o Player ${player} escolhe, o outro joystick fica desativado.
+  `;
 }
 
 function renderWheel() {
@@ -163,6 +191,7 @@ function highlightField() {
   qsa('.input-wrap').forEach(el => el.classList.remove('field-active'));
   const el = $(wheel.fields[wheel.fieldIndex]);
   el?.parentElement?.classList.add('field-active');
+  updateWheelHint();
 }
 
 function moveWheel(delta) {
@@ -180,6 +209,7 @@ function confirmWheel() {
     if (wheel.fieldIndex < wheel.fields.length - 1) {
       wheel.fieldIndex++;
       wheel.index = 0;
+      navHoldDir = 'PARADO';
       renderWheel();
       highlightField();
     } else {
