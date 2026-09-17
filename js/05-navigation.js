@@ -27,7 +27,8 @@ const navModel = {
   - telas/etapas do Player 1 -> J1 navega e confirma; clique J2 volta
   - telas/etapas do Player 2 -> J2 navega e confirma; clique J1 volta
   - telas gerais (menu, ready, pause, vitória, recordes) -> J1 navega/confirma; J2 volta
-  - nome 2P: enquanto digita o nome do P1 usa J1; ao passar para o P2 usa J2
+  - nome 2P: enquanto digita o nome do P1 usa J1; ao confirmar OK o foco passa
+    para o campo do P2 e o controle troca imediatamente para o J2
 */
 function selectionPlayerForCurrentScreen() {
   if (state.mode !== '2P') return 1;
@@ -56,10 +57,10 @@ function navItems() {
   Decide automaticamente qual eixo usar de acordo com o layout real da tela.
   - opções lado a lado -> eixo X do jogador ativo
   - opções empilhadas -> eixo Y do jogador ativo
-  - roda de letras -> horizontal
+  - seleção de nome -> vertical, no estilo arcade
 */
 function navAxisForCurrentScreen() {
-  if (currentScreen === 'name1p' || currentScreen === 'name2p') return 'horizontal';
+  if (currentScreen === 'name1p' || currentScreen === 'name2p') return 'vertical';
 
   const items = navItems().filter(el => {
     const style = getComputedStyle(el);
@@ -126,13 +127,15 @@ function confirmNav() {
 
 function updateArduinoMenuSelection() { updateNavFocus(); }
 
-/* ---------- Roda de letras (digitar nome pelo joystick) ---------- */
+/* ---------- Seletor arcade de letras (digitar nome pelo joystick) ---------- */
 
+// Para a feira, o seletor físico fica simples e rápido: somente letras,
+// espaço, apagar e OK. O nome também fica limitado a 10 caracteres.
 const WHEEL_CHARS = [
   ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-  ...'0123456789'.split(''),
   '␣', '⌫', 'OK'
 ];
+const MAX_ARCADE_NAME_LENGTH = 10;
 
 const wheel = { index: 0, fields: [], fieldIndex: 0 };
 
@@ -144,12 +147,21 @@ function buildWheelIfNeeded(screenId) {
   wheel.fieldIndex = 0;
   wheel.index = 0;
 
+  wheel.fields.forEach(id => {
+    const field = $(id);
+    if (field) field.maxLength = MAX_ARCADE_NAME_LENGTH;
+  });
+
   box.innerHTML = `
     <div class="wheel-head">
-      <span>DIGITAR COM O JOYSTICK</span>
+      <span>SELETOR ARCADE</span>
       <b id="wheelField">${fieldLabel()}</b>
     </div>
-    <div class="wheel-track" id="wheelTrack"></div>
+    <div class="wheel-selector">
+      <span class="wheel-arrow" aria-hidden="true">▲</span>
+      <div class="wheel-track" id="wheelTrack"></div>
+      <span class="wheel-arrow" aria-hidden="true">▼</span>
+    </div>
     <div class="wheel-hint" id="wheelHint"></div>
   `;
   renderWheel();
@@ -159,7 +171,7 @@ function buildWheelIfNeeded(screenId) {
 
 function fieldLabel() {
   if (wheel.fields.length < 2) return 'NOME DO JOGADOR';
-  return wheel.fieldIndex === 0 ? 'PLAYER 1' : 'PLAYER 2';
+  return wheel.fieldIndex === 0 ? 'PLAYER 1 • J1' : 'PLAYER 2 • J2';
 }
 
 function updateWheelHint() {
@@ -169,8 +181,8 @@ function updateWheelHint() {
   const player = selectionPlayerForCurrentScreen();
   const other = player === 1 ? 2 : 1;
   hint.innerHTML = `
-    <b>Joystick ${player} ← →</b> escolhe a letra • <b>clique J${player}</b> confirma • <b>clique J${other}</b> volta<br>
-    <b>␣</b> espaço • <b>⌫</b> apagar • escolha <b>OK</b> para avançar.
+    <b>Joystick ${player} ↑ ↓</b> escolhe • <b>clique J${player}</b> confirma • <b>clique J${other}</b> volta<br>
+    <b>␣</b> espaço • <b>⌫</b> apagar • <b>OK</b> ${wheel.fields.length > 1 && wheel.fieldIndex === 0 ? 'passa para o Player 2' : 'continua'}.
   `;
 }
 
@@ -178,11 +190,14 @@ function renderWheel() {
   const track = $('wheelTrack');
   if (!track) return;
   const cells = [];
-  for (let offset = -3; offset <= 3; offset++) {
+
+  // Exibe só cinco opções por vez para ficar parecido com seletor de arcade.
+  for (let offset = -2; offset <= 2; offset++) {
     const i = (wheel.index + offset + WHEEL_CHARS.length) % WHEEL_CHARS.length;
     const cls = offset === 0 ? 'wheel-cell center' : `wheel-cell ${Math.abs(offset) > 1 ? 'dim' : ''}`;
     cells.push(`<div class="${cls}">${WHEEL_CHARS[i]}</div>`);
   }
+
   track.innerHTML = cells.join('');
   const label = $('wheelField');
   if (label) label.textContent = fieldLabel();
@@ -192,6 +207,11 @@ function highlightField() {
   qsa('.input-wrap').forEach(el => el.classList.remove('field-active'));
   const el = $(wheel.fields[wheel.fieldIndex]);
   el?.parentElement?.classList.add('field-active');
+
+  // O foco real acompanha o jogador ativo. No 2P, depois do OK do P1,
+  // o cursor e o destaque passam automaticamente para o input do P2.
+  try { el?.focus({ preventScroll: true }); } catch (_) { el?.focus(); }
+
   updateWheelHint();
 }
 
@@ -214,12 +234,17 @@ function confirmWheel() {
       renderWheel();
       highlightField();
     } else {
+      field.blur();
       document.querySelector('.screen.active .primary.full')?.click();
     }
     return;
   }
 
-  if (char === '⌫') { field.value = field.value.slice(0, -1); return; }
-  if (field.value.length >= 16) return;
+  if (char === '⌫') {
+    field.value = field.value.slice(0, -1);
+    return;
+  }
+
+  if (field.value.length >= MAX_ARCADE_NAME_LENGTH) return;
   field.value += (char === '␣' ? ' ' : char);
 }
