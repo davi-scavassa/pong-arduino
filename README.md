@@ -72,6 +72,8 @@ Menus com opções empilhadas usam **↑ / ↓**. Menus com opções lado a lado
 
 Na tela de nomes em 2 Players, o nome do P1 é digitado pelo J1. Ao passar para o nome do P2, o controle troca automaticamente para o J2. Nessa etapa, o clique do joystick oposto também funciona como voltar.
 
+O site também bloqueia temporariamente um clique que ainda esteja fisicamente pressionado durante a troca de tela ou de jogador. Assim, o mesmo clique não vira acidentalmente um segundo comando, como confirmar e logo depois voltar, pausar ou ativar um especial.
+
 ### Durante a partida
 
 #### 1 Player
@@ -85,6 +87,7 @@ Na tela de nomes em 2 Players, o nome do P1 é digitado pelo J1. Ao passar para 
 - Joystick 2 Y → move o Player 2
 - Clique J1 → especial do Player 1
 - Clique J2 → especial do Player 2
+- Pause → botão na tela
 
 Durante a partida, os eixos X não interferem nas raquetes.
 
@@ -116,6 +119,8 @@ Se os quatro eixos começarem a apresentar valores estranhos ao mesmo tempo, con
 - Depois de **45 segundos de partida**, se o jogador já tiver gasto o uso inicial, recebe **1 uso extra**.
 - Esse bônus acontece apenas **uma vez por jogador em cada partida**. Se o primeiro uso só for gasto depois dos 45 segundos, o uso extra é liberado logo em seguida.
 - No modo 1 Player, a CPU não recebe essa recarga extra.
+- A contagem dos 45 segundos começa depois do `3, 2, 1, JÁ!` e não avança durante o pause.
+- O cronômetro da partida fica visível na tela e um aviso aparece quando um especial é recarregado.
 
 Especiais:
 - ⚡ **Bola Rápida**
@@ -139,6 +144,7 @@ js/05-navigation.js                navegação dos menus
 js/06-loop.js                      loop principal
 js/07-serial.js                    Web Serial
 js/08-boot.js                      inicialização
+js/09-fair-polish.js               acabamento e proteções para a feira
 styles.css / styles-2/3/4.css      visual
 arduino/pong_arduino.ino           sketch principal
 arduino/pong_arduino_analogico.ino sketch opcional com valores analógicos
