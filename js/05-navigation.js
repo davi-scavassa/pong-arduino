@@ -21,12 +21,12 @@ const navModel = {
 };
 
 /*
-  Define quem pode controlar a seleção atual.
+  Define quem controla a seleção atual.
 
   Regra:
-  - telas/etapas do Player 1 -> somente Joystick 1
-  - telas/etapas do Player 2 -> somente Joystick 2
-  - telas gerais (menu, ready, pause, vitória, recordes) -> Joystick 1
+  - telas/etapas do Player 1 -> J1 navega e confirma; clique J2 volta
+  - telas/etapas do Player 2 -> J2 navega e confirma; clique J1 volta
+  - telas gerais (menu, ready, pause, vitória, recordes) -> J1 navega/confirma; J2 volta
   - nome 2P: enquanto digita o nome do P1 usa J1; ao passar para o P2 usa J2
 */
 function selectionPlayerForCurrentScreen() {
@@ -167,9 +167,10 @@ function updateWheelHint() {
   if (!hint) return;
 
   const player = selectionPlayerForCurrentScreen();
+  const other = player === 1 ? 2 : 1;
   hint.innerHTML = `
-    <b>Joystick ${player} ← →</b> escolhe a letra • <b>clique J${player}</b> confirma • escolha <b>OK</b> para avançar<br>
-    <b>␣</b> espaço • <b>⌫</b> apagar. Enquanto o Player ${player} escolhe, o outro joystick fica desativado.
+    <b>Joystick ${player} ← →</b> escolhe a letra • <b>clique J${player}</b> confirma • <b>clique J${other}</b> volta<br>
+    <b>␣</b> espaço • <b>⌫</b> apagar • escolha <b>OK</b> para avançar.
   `;
 }
 
