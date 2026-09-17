@@ -17,6 +17,7 @@ function showScreen(id) {
   navIndex = initialNavIndex(id);
   buildWheelIfNeeded(id);
   updateNavFocus();
+  updateStaticControlLabels();
   setSerialCollapsed(id === 'game');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -136,6 +137,41 @@ function showReady2P() {
   showScreen('ready');
 }
 
+function updateStaticControlLabels() {
+  const menuHint = document.querySelector('#menu .control-hint');
+  if (menuHint) {
+    menuHint.innerHTML = `
+      <span><kbd>🕹</kbd> Joystick 1 • navegar</span>
+      <span><kbd>J1</kbd> clique • confirmar</span>
+      <span><kbd>J2</kbd> usado nas seleções do Player 2</span>
+    `;
+  }
+
+  const p1Key = document.querySelector('.left-special .special-heading b');
+  if (p1Key) p1Key.textContent = 'J1';
+
+  const footer = document.querySelector('.game-footer.controls-strip');
+  if (footer) {
+    const first = footer.children[0];
+    const main = footer.querySelector('.main-control');
+    const restart = footer.querySelector('.restart-control');
+
+    if (first) first.innerHTML = '<b>J1</b><span>Especial P1</span>';
+    if (main) {
+      main.innerHTML = state.mode === '1P'
+        ? '<b>J2</b><span>Pause / Continuar</span>'
+        : '<b>Ⅱ</b><span>Pause na tela</span>';
+    }
+    if (restart) restart.style.display = 'none';
+  }
+
+  const pauseSmall = document.querySelector('.pause-btn small');
+  if (pauseSmall) pauseSmall.textContent = state.mode === '1P' ? 'J2' : 'PAUSE';
+
+  const pauseContinue = document.querySelector('#pause .primary.full span');
+  if (pauseContinue) pauseContinue.textContent = '• J1';
+}
+
 function updateGamePreview(p1, p2, s1, s2) {
   $('gameP1Name').textContent = p1;
   $('gameP2Name').textContent = p2;
@@ -146,15 +182,15 @@ function updateGamePreview(p1, p2, s1, s2) {
 
   const isCpu = state.mode === '1P';
   $('gameModeLabel').textContent = isCpu ? `1 PLAYER • ${state.difficulty}` : '2 PLAYERS • LOCAL';
-  $('p2SpecialButtonLabel').textContent = isCpu ? 'AUTO' : 'B3';
+  $('p2SpecialButtonLabel').textContent = isCpu ? 'AUTO' : 'J2';
   $('gameP2Type').textContent = isCpu ? 'CPU' : 'PLAYER 2';
   $('arenaP2Label').textContent = isCpu ? 'CPU' : 'P2';
   $('rightSpecialOwner').textContent = isCpu ? 'ESPECIAL CPU' : 'ESPECIAL P2';
   $('footerP2Control').innerHTML = isCpu
     ? '<b>AUTO</b><span>Especial da CPU</span>'
-    : '<b>B3</b><span>Especial P2</span>';
-  const b3Label = $('footerB3Label');
-  if (b3Label) b3Label.textContent = isCpu ? 'Reiniciar partida' : 'Especial P2';
+    : '<b>J2</b><span>Especial P2</span>';
+
+  updateStaticControlLabels();
 }
 
 function setRecordTab(mode, button) {
@@ -177,4 +213,3 @@ function renderRecords(mode = '1P') {
   $('statSpecial').textContent = data.special;
   $('statMatches').textContent = data.matches;
 }
-
