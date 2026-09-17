@@ -42,7 +42,7 @@ function initSerialPanel() {
       <div class="serial-value" id="serialJ2Click"><span>J2 CLICK</span><b>0</b></div>
     </div>
     <div class="serial-raw" id="serialRaw">Aguardando dados...</div>
-    <div class="serial-note">Cada jogador controla apenas as próprias seleções: P1 usa J1 e P2 usa J2. O outro joystick fica ignorado.</div>
+    <div class="serial-note">Nas seleções, o joystick do jogador atual navega e confirma; o clique do outro joystick volta quando houver retorno.</div>
   `;
   document.body.appendChild(panel);
 
@@ -198,9 +198,9 @@ function processArduinoLine(line) {
       serialInput.b2 = state.mode === '1P' ? j2 : 0; // pausa no 1P
       serialInput.b3 = state.mode === '2P' ? j2 : 0; // especial P2 no 2P
     } else {
-      // Fora da partida, somente o dono da seleção atual pode confirmar.
+      // O jogador da seleção confirma; o joystick oposto funciona como voltar.
       const player = selectionPlayerForCurrentScreen();
-      serialInput.b1 = 0;
+      serialInput.b1 = player === 2 ? j1 : j2;
       serialInput.b2 = player === 2 ? j2 : j1;
       serialInput.b3 = 0;
     }
