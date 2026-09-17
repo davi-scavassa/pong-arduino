@@ -146,10 +146,10 @@
   gap: 8px;
 }
 
-/* ---------- Roda de letras (digitar nome pelo joystick) ---------- */
+/* ---------- Seletor arcade de nome ---------- */
 .wheel-box {
   margin: 16px 0 4px;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: rgba(8, 16, 37, .6);
@@ -167,40 +167,69 @@
   color: var(--muted);
 }
 
-.wheel-head b { color: var(--cyan); }
+.wheel-head b {
+  color: var(--cyan);
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(53, 231, 255, .18);
+  background: rgba(53, 231, 255, .06);
+}
+
+.wheel-selector {
+  width: min(190px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.wheel-arrow {
+  color: rgba(53, 231, 255, .65);
+  font-size: 10px;
+  line-height: 1;
+  filter: drop-shadow(0 0 7px rgba(53, 231, 255, .35));
+}
 
 .wheel-track {
+  width: 100%;
+  max-height: 218px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   overflow: hidden;
 }
 
 .wheel-cell {
-  min-width: 38px;
-  height: 42px;
+  width: 100%;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 8px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  border-radius: 9px;
   border: 1px solid rgba(120, 145, 205, .14);
   background: rgba(13, 24, 52, .6);
   color: #6f7f9d;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
-  transition: transform .12s ease, color .12s ease, border-color .12s ease;
+  transition: transform .12s ease, color .12s ease, border-color .12s ease, opacity .12s ease;
 }
 
-.wheel-cell.dim { opacity: .45; transform: scale(.88); }
+.wheel-cell.dim {
+  opacity: .34;
+  transform: scale(.92);
+}
 
 .wheel-cell.center {
   color: #fff;
   border-color: var(--cyan);
-  background: rgba(53, 231, 255, .12);
-  box-shadow: 0 0 24px rgba(53, 231, 255, .22);
-  transform: scale(1.12);
+  background: linear-gradient(90deg, rgba(53, 231, 255, .15), rgba(155, 99, 255, .12));
+  box-shadow: 0 0 24px rgba(53, 231, 255, .20), inset 0 0 18px rgba(53, 231, 255, .05);
+  transform: scale(1.04);
+  font-size: 15px;
 }
 
 .wheel-hint {
@@ -215,7 +244,11 @@
 
 .input-wrap.field-active {
   border-color: var(--cyan);
-  box-shadow: 0 0 0 1px rgba(53, 231, 255, .2);
+  box-shadow: 0 0 0 1px rgba(53, 231, 255, .2), 0 0 22px rgba(53, 231, 255, .08);
+}
+
+.input-wrap.field-active input {
+  color: #fff;
 }
 
 /* ---------- Painel serial ---------- */
