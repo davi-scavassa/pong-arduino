@@ -131,6 +131,23 @@ No modo 1 Player, o especial da CPU é sorteado antes da partida.
 
 ---
 
+## Recordes
+
+Os recordes agora usam resultados reais das partidas e ficam salvos no **`localStorage` do navegador**.
+
+- ranking separado para **1 Player** e **2 Players**;
+- contabiliza vitórias por jogador;
+- mostra a **maior sequência de vitórias**;
+- mostra o **especial realmente mais usado**;
+- mostra o total de partidas registradas;
+- salva placar, modo, dificuldade, especiais, duração e data da partida;
+- os dados continuam depois de atualizar ou fechar a página, desde que o armazenamento desse navegador não seja apagado;
+- o botão **LIMPAR RECORDES** apaga apenas os dados salvos nesse navegador e pede confirmação antes.
+
+Como o armazenamento é local, abrir o jogo em outro computador, navegador ou origem (`localhost` diferente de GitHub Pages, por exemplo) terá um ranking separado.
+
+---
+
 ## Arquivos principais
 
 ```text
@@ -145,6 +162,7 @@ js/06-loop.js                      loop principal
 js/07-serial.js                    Web Serial
 js/08-boot.js                      inicialização
 js/09-fair-polish.js               acabamento e proteções para a feira
+js/10-records.js                   recordes reais salvos no navegador
 styles.css / styles-2/3/4.css      visual
 arduino/pong_arduino.ino           sketch principal
 arduino/pong_arduino_analogico.ino sketch opcional com valores analógicos
