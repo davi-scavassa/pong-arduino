@@ -147,6 +147,13 @@ function updateStaticControlLabels() {
     `;
   }
 
+  const readyRules = document.querySelectorAll('#ready .match-rules span');
+  if (readyRules[1]) {
+    readyRules[1].textContent = state.mode === '1P'
+      ? '● 1 especial + 1 bônus após 45s se usado'
+      : '● 1 especial + 1 bônus após 45s por jogador';
+  }
+
   const p1Key = document.querySelector('.left-special .special-heading b');
   if (p1Key) p1Key.textContent = 'J1';
 
