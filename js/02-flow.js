@@ -143,7 +143,7 @@ function updateStaticControlLabels() {
     menuHint.innerHTML = `
       <span><kbd>🕹</kbd> Joystick 1 • navegar</span>
       <span><kbd>J1</kbd> clique • confirmar</span>
-      <span><kbd>J2</kbd> usado nas seleções do Player 2</span>
+      <span><kbd>J2</kbd> clique • voltar</span>
     `;
   }
 
