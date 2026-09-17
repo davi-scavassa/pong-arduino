@@ -112,7 +112,10 @@ Se os quatro eixos começarem a apresentar valores estranhos ao mesmo tempo, con
 - Partida até **5 pontos**.
 - A bola acelera conforme as rebatidas.
 - O ângulo depende do ponto em que a bola bate na raquete.
-- Cada jogador tem **1 uso do especial por partida**.
+- Cada jogador humano começa com **1 uso do especial**.
+- Depois de **45 segundos de partida**, se o jogador já tiver gasto o uso inicial, recebe **1 uso extra**.
+- Esse bônus acontece apenas **uma vez por jogador em cada partida**. Se o primeiro uso só for gasto depois dos 45 segundos, o uso extra é liberado logo em seguida.
+- No modo 1 Player, a CPU não recebe essa recarga extra.
 
 Especiais:
 - ⚡ **Bola Rápida**
