@@ -30,6 +30,15 @@ function saveMatches(matches) {
   }
 }
 
+function escapeRecordText(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 function recordNameKey(name) {
   return String(name || 'PLAYER').trim().toUpperCase();
 }
@@ -220,7 +229,7 @@ renderRecords = function (mode = '1P') {
     list.innerHTML = ranking.map((row, index) => `
       <div class="record-row ${index < 3 ? 'podium' : ''}">
         <b>${index + 1}</b>
-        <span>${row.name}</span>
+        <span>${escapeRecordText(row.name)}</span>
         <small>${row.wins} vitória${row.wins === 1 ? '' : 's'}</small>
       </div>
     `).join('');
