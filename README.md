@@ -1,98 +1,154 @@
 # Neon Pong — Arduino + Web
 
-Pong completo rodando no navegador, controlado por dois joysticks e três botões ligados a um Arduino.
-O Arduino só envia os comandos pela USB; toda a parte visual e a lógica do jogo ficam no site.
+Pong completo rodando no navegador, controlado por **dois joysticks com clique próprio**, ligados a um Arduino. Não há mais botões externos.
+
+O Arduino envia os comandos pela USB e toda a parte visual, menus e lógica do jogo ficam no site.
 
 ---
 
-## Como rodar (jeito recomendado)
+## Ligações
 
-1. Ligue o Arduino no USB e envie o sketch `arduino/pong_arduino.ino` pela IDE.
-2. **Feche o Monitor Serial da IDE.** Se ele estiver aberto, o navegador não consegue usar a porta.
-3. Dê dois cliques em **`abrir-jogo.bat`** (Windows) ou rode **`./abrir-jogo.sh`** (Mac/Linux).
-   O navegador abre sozinho em `http://localhost:8000`.
-4. No painel **ARDUINO • SERIAL** (canto inferior direito), clique em **CONECTAR ARDUINO** e escolha a porta COM do Arduino.
-5. A bolinha do painel fica verde e os valores começam a se mexer. Pode jogar.
+### Joystick 1 — Player 1
+- `VRx → A0`
+- `VRy → A1`
+- `SW → D2`
+- `VCC → 5V`
+- `GND → GND`
 
-> Use **Google Chrome** ou **Microsoft Edge** no computador. Firefox e Safari não têm acesso à porta serial.
+### Joystick 2 — Player 2
+- `VRx → A2`
+- `VRy → A3`
+- `SW → D3`
+- `VCC → 5V`
+- `GND → GND`
 
-### E se eu abrir o `index.html` direto (dois cliques)?
+Os cliques usam `INPUT_PULLUP`, então não precisam de resistor externo.
 
-O jogo abre e funciona normalmente no teclado, mas o navegador **bloqueia a porta serial** em arquivos abertos
-direto do disco por questão de segurança. Para usar o Arduino, use o `abrir-jogo.bat`. É o mesmo site,
-só servido por `http://localhost`, que é o que o Chrome exige.
+---
+
+## Como rodar
+
+1. Envie `arduino/pong_arduino.ino` para o Arduino.
+2. Feche o **Monitor Serial** da IDE.
+3. Abra `abrir-jogo.bat` no Windows ou `abrir-jogo.sh` no Mac/Linux.
+4. No painel **ARDUINO • SERIAL**, clique em **CONECTAR ARDUINO**.
+5. Escolha a porta do Arduino.
+
+O jogo usa Web Serial. Se o navegador não liberar a porta, teste em um navegador desktop com suporte a Web Serial e abra o projeto por `http://localhost`, não diretamente pelo arquivo `index.html`.
+
+---
+
+## Protocolo serial
+
+O sketch principal envia:
+
+```text
+P1:PARADO|X1:PARADO|P2:PARADO|X2:PARADO|J1:0|J2:0
+```
+
+- `P1` = eixo Y do Joystick 1
+- `X1` = eixo X do Joystick 1
+- `P2` = eixo Y do Joystick 2
+- `X2` = eixo X do Joystick 2
+- `J1` = clique do Joystick 1
+- `J2` = clique do Joystick 2
+
+Direções verticais: `CIMA`, `BAIXO`, `PARADO`.
+Direções horizontais: `ESQUERDA`, `DIREITA`, `PARADO`.
 
 ---
 
 ## Controles
 
-| Controle | Nos menus | Partida 1 Player | Partida 2 Players |
-|---|---|---|---|
-| **Joystick 1** | navega / escolhe | move o Player 1 | move o Player 1 |
-| **Joystick 2** | — | — | move o Player 2 |
-| **Botão 1** (D2) | voltar / apagar letra | especial do P1 | especial do P1 |
-| **Botão 2** (D3) | confirmar | pause / continuar | pause / continuar |
-| **Botão 3** (D4) | volta ao menu | reinicia a partida | especial do P2 |
+### Menus e seleções
 
-### Digitar o nome só com o joystick
-Nas telas de nome aparece uma **roda de letras**: o Joystick 1 escolhe a letra, o Botão 2 adiciona.
-Escolha `␣` para espaço, `⌫` para apagar e **`OK`** para avançar. O teclado do PC também funciona normalmente.
+Cada jogador controla apenas as próprias escolhas:
 
-### Teclado (para testar sem o Arduino)
-`W`/`S` = Player 1 e navegação · `↑`/`↓` = Player 2 e navegação · `Enter` = Botão 2 · `Esc` = Botão 1 · `M` = Botão 3
+- seleção do **Player 1** → somente **Joystick 1** funciona;
+- seleção do **Player 2** → somente **Joystick 2** funciona;
+- enquanto um jogador escolhe, o outro joystick é ignorado.
+
+Menus com opções empilhadas usam **↑ / ↓**. Menus com opções lado a lado usam **← / →**. O clique do joystick ativo confirma a opção.
+
+Na tela de nomes em 2 Players, o nome do P1 é digitado pelo J1. Ao passar para o nome do P2, o controle troca automaticamente para o J2.
+
+### Durante a partida
+
+#### 1 Player
+- Joystick 1 Y → move o Player 1
+- Clique J1 → especial do Player 1
+- Clique J2 → pause
+- CPU se controla automaticamente
+
+#### 2 Players
+- Joystick 1 Y → move o Player 1
+- Joystick 2 Y → move o Player 2
+- Clique J1 → especial do Player 1
+- Clique J2 → especial do Player 2
+
+Durante a partida, os eixos X não interferem nas raquetes.
+
+---
+
+## Pequena oscilação dos joysticks
+
+É normal o joystick apresentar pequenas variações, principalmente nas diagonais. O sketch principal usa uma faixa neutra entre `350` e `650`, então pequenas oscilações perto do centro são ignoradas.
+
+Além disso, nos menus o jogo lê apenas o eixo necessário para aquela tela. Por exemplo, em um menu horizontal o eixo Y não interfere.
+
+Se um joystick começar a mover sozinho parado, aumente a zona morta, por exemplo:
+
+```cpp
+const int limiteBaixo = 300;
+const int limiteAlto = 700;
+```
 
 ---
 
 ## Como o jogo funciona
 
-- Partida vai até **5 pontos**.
-- A bola **acelera 7% a cada rebatida** — os ralis vão ficando tensos até alguém falhar.
-- O ângulo da rebatida depende de **onde a bola bate na raquete**: no meio ela volta reta, na ponta ela abre.
-- Cada jogador tem **1 uso do especial por partida**:
-  - ⚡ **Bola Rápida** — a bola fica 55% mais rápida por 4 segundos.
-  - ↕ **Raquete Maior** — sua raquete cresce 75% por 6,5 segundos.
-  - 🛡 **Defesa Extra** — um escudo atrás da sua raquete segura **uma** bola perdida.
-- No modo 1 Player o especial da CPU é sorteado antes da partida e ela usa sozinha, na hora que achar melhor.
+- Partida até **5 pontos**.
+- A bola acelera conforme as rebatidas.
+- O ângulo depende do ponto em que a bola bate na raquete.
+- Cada jogador tem **1 uso do especial por partida**.
 
-### Dificuldades da CPU
-| | velocidade | reação | margem de erro |
-|---|---|---|---|
-| **Fácil** | lenta | 0,60 s | grande |
-| **Médio** | média | 0,24 s | média |
-| **Difícil** | alta | 0,13 s | pequena |
+Especiais:
+- ⚡ **Bola Rápida**
+- ↕ **Raquete Maior**
+- 🛡 **Defesa Extra**
 
-Os três níveis foram calibrados em simulação: no Fácil um iniciante ganha na maioria das partidas,
-no Médio precisa já ter pegado o jeito, e no Difícil as partidas ficam em torno de 4x4 contra um jogador bom.
+No modo 1 Player, o especial da CPU é sorteado antes da partida.
 
 ---
 
-## Arquivos
+## Arquivos principais
 
+```text
+index.html                         telas do jogo
+script.js                          carrega os módulos JS
+js/01-state.js                     estado geral
+js/02-flow.js                      telas e fluxo
+js/03-game.js                      lógica do Pong
+js/04-input.js                     entrada dos dois joysticks
+js/05-navigation.js                navegação dos menus
+js/06-loop.js                      loop principal
+js/07-serial.js                    Web Serial
+js/08-boot.js                      inicialização
+styles.css / styles-2/3/4.css      visual
+arduino/pong_arduino.ino           sketch principal
+arduino/pong_arduino_analogico.ino sketch opcional com valores analógicos
 ```
-index.html                       telas do jogo
-script.js                        motor do jogo + leitura do Arduino (Web Serial)
-styles.css / -2 / -3 / -4.css    visual
-arduino/pong_arduino.ino         sketch principal (o que você já tem)
-arduino/pong_arduino_analogico.ino  sketch opcional, movimento suave
-abrir-jogo.bat / .sh             abre o jogo no localhost
-```
-
-### Sketch analógico (opcional)
-`pong_arduino_analogico.ino` usa **exatamente as mesmas portas e ligações**. A diferença é que ele manda o
-valor cru do joystick (0 a 1023) em vez de CIMA/BAIXO/PARADO, então a raquete anda **proporcional**:
-empurrou pouco, anda devagar; empurrou tudo, anda rápido. Ele também não perde toques rápidos nos botões.
-O site aceita os dois formatos sozinho, sem mudar nada. Vale testar os dois e usar o que você achar melhor na feira.
 
 ---
 
 ## Se der problema
 
-| Sintoma | O que fazer |
+| Sintoma | O que verificar |
 |---|---|
-| Botão "CONECTAR ARDUINO" desabilitado | Você abriu o `index.html` direto. Use o `abrir-jogo.bat`. Ou está no Firefox/Safari — troque para Chrome. |
-| "Não foi possível abrir a porta" | O Monitor Serial da IDE está aberto. Feche e tente de novo. |
-| Conectou mas nada se mexe | Veja a linha crua no painel. Se estiver vazia, confira se o sketch foi enviado e se o baud é 9600. |
-| Raquete anda para o lado errado | Gire o joystick 180° no encaixe, ou troque `CIMA` por `BAIXO` no sketch. |
-| Raquete anda sozinha parada | O centro do joystick não está em 512. Aumente a faixa: `limiteBaixo = 300` e `limiteAlto = 700`. |
-
-> Se mudar o `Serial.begin()` do sketch, mude junto o `baudRate: 9600` no `script.js`.
+| Não conecta ao Arduino | Feche o Monitor Serial da IDE |
+| Nada chega ao site | Confirme `9600 baud` e a porta correta |
+| J1 ou J2 não confirma | Confira `SW → D2` e `SW → D3` |
+| Esquerda/direita não funciona | Confira `A0` e `A2` |
+| Cima/baixo não funciona | Confira `A1` e `A3` |
+| Movimento invertido | Inverta os limites no sketch ou gire a orientação física do joystick |
+| Oscilação perto do centro | Aumente a zona morta |
