@@ -9,8 +9,9 @@
      Joystick 2 -> Player 2 / seleções do Player 2
        A2 = eixo X | A3 = eixo Y | D3 = clique SW
 
-   Nos menus, apenas o joystick do jogador responsável pela
-   seleção atual fica ativo. Durante a partida, os dois ficam ativos.
+   Nos menus, o joystick do jogador responsável pela seleção atual
+   navega e confirma. O clique do joystick oposto funciona como voltar
+   quando a tela permite retorno. Durante a partida, os dois ficam ativos.
 
    Teclado (para testar sem Arduino):
      W / S + A / D        -> Player 1
