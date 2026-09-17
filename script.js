@@ -14,7 +14,8 @@
   'js/09-fair-polish.js',
   'js/10-records.js',
   'js/11-special-recharge.js',
-  'js/12-special-hud-layout.js'
+  'js/12-special-hud-layout.js',
+  'js/13-fair-mode.js'
 ].forEach(src => {
   document.write(`<script src="${src}"></script>`);
 });
