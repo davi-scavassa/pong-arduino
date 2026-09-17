@@ -2,9 +2,18 @@
    9. POLIMENTO PARA A FEIRA
    - cronômetro visível da partida
    - aviso visual quando o especial recarrega aos 45s
+   - guia rápido de controles antes da partida
+   - proteção contra clique segurado virar outro comando ao trocar de tela
    ============================================================ */
 
 let bonusToastTimer = null;
+let fairSerialContext = '';
+let fairWaitForClickRelease = false;
+
+function fairControlContext() {
+  if (currentScreen === 'game') return `game:${state.mode}`;
+  return `ui:${currentScreen}:p${selectionPlayerForCurrentScreen()}`;
+}
 
 function ensureFairPolishUI() {
   const statusRow = document.querySelector('#game .match-status-row');
@@ -27,8 +36,15 @@ function ensureFairPolishUI() {
     arena.appendChild(toast);
   }
 
-  const readyRules = document.querySelectorAll('#ready .match-rules span');
-  if (readyRules[1]) readyRules[1].textContent = '● 1 especial + bônus aos 45s';
+  const readyPanel = document.querySelector('#ready .ready-panel');
+  const startButton = readyPanel?.querySelector('.big-start');
+  if (readyPanel && !$('readyControlGuide')) {
+    const guide = document.createElement('div');
+    guide.id = 'readyControlGuide';
+    guide.className = 'ready-control-guide';
+    if (startButton) readyPanel.insertBefore(guide, startButton);
+    else readyPanel.appendChild(guide);
+  }
 
   if (!$('fairPolishStyles')) {
     const style = document.createElement('style');
@@ -53,6 +69,32 @@ function ensureFairPolishUI() {
       .match-timer b {
         color: #fff;
         font-variant-numeric: tabular-nums;
+      }
+
+      .ready-control-guide {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .ready-control-guide span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 11px;
+        border-radius: 999px;
+        border: 1px solid rgba(118,148,220,.18);
+        background: rgba(5,11,26,.42);
+        color: #8191af;
+        font-size: 9px;
+        font-weight: 800;
+      }
+
+      .ready-control-guide b {
+        color: #35e7ff;
+        font-size: 10px;
       }
 
       .bonus-toast {
@@ -88,10 +130,30 @@ function ensureFairPolishUI() {
 
       @media (max-width: 680px) {
         .match-timer { min-width: 70px; padding: 7px 9px; }
+        .ready-control-guide { gap: 6px; }
+        .ready-control-guide span { width: 100%; justify-content: center; }
         .bonus-toast { top: 9%; max-width: 86%; text-align: center; }
       }
     `;
     document.head.appendChild(style);
+  }
+}
+
+function updateFairReadyGuide() {
+  const guide = $('readyControlGuide');
+  if (!guide) return;
+
+  if (state.mode === '2P') {
+    guide.innerHTML = `
+      <span><b>J1</b> P1: mover + clique especial</span>
+      <span><b>J2</b> P2: mover + clique especial</span>
+      <span><b>Ⅱ</b> pause pelo botão na tela</span>
+    `;
+  } else {
+    guide.innerHTML = `
+      <span><b>J1</b> mover + clique especial</span>
+      <span><b>J2</b> clique para pausar</span>
+    `;
   }
 }
 
@@ -110,7 +172,8 @@ function showBonusToast(names) {
   if (!toast || !names.length) return;
 
   const label = names.length === 1 ? names[0] : names.join(' + ');
-  toast.innerHTML = `<span>⚡</span><b>${label} • ESPECIAL RECARREGADO!</b>`;
+  const text = toast.querySelector('b');
+  if (text) text.textContent = `${label} • ESPECIAL RECARREGADO!`;
   toast.classList.add('show');
 
   clearTimeout(bonusToastTimer);
@@ -143,6 +206,68 @@ updateLongMatchSpecialBonus = function () {
   }
 };
 
+/*
+  O mesmo clique físico pode mudar de significado depois de uma troca de tela.
+  Exemplo: J1 confirma uma tela do P1 e, na tela seguinte do P2, J1 passa a ser
+  "voltar". Enquanto o botão ainda estiver fisicamente pressionado, ignoramos
+  comandos de clique até os dois joysticks serem soltos. Isso evita duplo comando.
+*/
+const baseProcessArduinoLineForFair = processArduinoLine;
+processArduinoLine = function (line) {
+  let j1 = null;
+  let j2 = null;
+
+  for (const part of line.split('|')) {
+    const sep = part.indexOf(':');
+    if (sep === -1) continue;
+    const key = part.slice(0, sep).trim();
+    const value = part.slice(sep + 1).trim();
+    if (key === 'J1' && (value === '0' || value === '1')) j1 = value === '1' ? 1 : 0;
+    if (key === 'J2' && (value === '0' || value === '1')) j2 = value === '1' ? 1 : 0;
+  }
+
+  const hasJoystickClicks = j1 !== null && j2 !== null;
+
+  if (hasJoystickClicks) {
+    const context = fairControlContext();
+    if (context !== fairSerialContext) {
+      if (j1 || j2) fairWaitForClickRelease = true;
+      fairSerialContext = context;
+    }
+  }
+
+  baseProcessArduinoLineForFair(line);
+
+  if (hasJoystickClicks && fairWaitForClickRelease) {
+    serialInput.b1 = 0;
+    serialInput.b2 = 0;
+    serialInput.b3 = 0;
+
+    if (!j1 && !j2) fairWaitForClickRelease = false;
+  }
+};
+
+const baseHandleSerialDisconnectedForFair = handleSerialDisconnected;
+handleSerialDisconnected = function (message) {
+  fairSerialContext = '';
+  fairWaitForClickRelease = false;
+  baseHandleSerialDisconnectedForFair(message);
+};
+
+// No esquema atual não existe B3 físico no modo 1P. Reiniciar a partida deve
+// acontecer pelo menu de pause, evitando reinício acidental por entrada antiga.
+const baseOnButton3ForFair = onButton3;
+onButton3 = function () {
+  if (currentScreen === 'game' && state.mode !== '2P') return;
+  baseOnButton3ForFair();
+};
+
+const baseUpdateStaticControlLabelsForFair = updateStaticControlLabels;
+updateStaticControlLabels = function () {
+  baseUpdateStaticControlLabelsForFair();
+  updateFairReadyGuide();
+};
+
 const baseStartMatchForFair = startMatch;
 startMatch = function () {
   ensureFairPolishUI();
@@ -159,4 +284,5 @@ renderGame = function () {
 };
 
 ensureFairPolishUI();
+updateStaticControlLabels();
 updateMatchTimer();
