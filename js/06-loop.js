@@ -52,7 +52,12 @@ function handleButtons() {
 }
 
 function onButton1() {
-  if (currentScreen === 'game') { activateSpecial('p1'); return; }
+  if (currentScreen === 'game') {
+    // Evita que o mesmo clique usado para iniciar a partida seja
+    // interpretado como especial enquanto a contagem 3, 2, 1 ainda roda.
+    if (game.phase === 'play') activateSpecial('p1');
+    return;
+  }
   if (currentScreen === 'pause') { resumeGame(); return; }
   if (currentScreen === 'menu') return;
 
@@ -93,8 +98,12 @@ function onButton2() {
 
 function onButton3() {
   if (currentScreen === 'game') {
-    if (state.mode === '2P') activateSpecial('p2');
-    else startMatch();
+    if (state.mode === '2P') {
+      // Mesma proteção para o Player 2: especial só durante o rally.
+      if (game.phase === 'play') activateSpecial('p2');
+    } else {
+      startMatch();
+    }
     return;
   }
   if (currentScreen === 'menu') return;
