@@ -12,7 +12,8 @@
   'js/07-serial.js',
   'js/08-boot.js',
   'js/09-fair-polish.js',
-  'js/10-records.js'
+  'js/10-records.js',
+  'js/11-special-recharge.js'
 ].forEach(src => {
   document.write(`<script src="${src}"></script>`);
 });
