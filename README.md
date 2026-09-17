@@ -62,15 +62,15 @@ Direções horizontais: `ESQUERDA`, `DIREITA`, `PARADO`.
 
 ### Menus e seleções
 
-Cada jogador controla apenas as próprias escolhas:
+O joystick responsável pela seleção atual navega e confirma. O clique do joystick oposto funciona como **voltar**, quando a tela permite retorno:
 
-- seleção do **Player 1** → somente **Joystick 1** funciona;
-- seleção do **Player 2** → somente **Joystick 2** funciona;
-- enquanto um jogador escolhe, o outro joystick é ignorado.
+- seleção do **Player 1** → J1 navega/confirma e **J2 volta**;
+- seleção do **Player 2** → J2 navega/confirma e **J1 volta**;
+- telas gerais, como menu, ready, recordes e vitória → J1 navega/confirma e **J2 volta**.
 
-Menus com opções empilhadas usam **↑ / ↓**. Menus com opções lado a lado usam **← / →**. O clique do joystick ativo confirma a opção.
+Menus com opções empilhadas usam **↑ / ↓**. Menus com opções lado a lado usam **← / →**.
 
-Na tela de nomes em 2 Players, o nome do P1 é digitado pelo J1. Ao passar para o nome do P2, o controle troca automaticamente para o J2.
+Na tela de nomes em 2 Players, o nome do P1 é digitado pelo J1. Ao passar para o nome do P2, o controle troca automaticamente para o J2. Nessa etapa, o clique do joystick oposto também funciona como voltar.
 
 ### Durante a partida
 
@@ -102,6 +102,8 @@ Se um joystick começar a mover sozinho parado, aumente a zona morta, por exempl
 const int limiteBaixo = 300;
 const int limiteAlto = 700;
 ```
+
+Se os quatro eixos começarem a apresentar valores estranhos ao mesmo tempo, confira também os jumpers, alimentação e GND antes de alterar o código.
 
 ---
 
@@ -152,3 +154,4 @@ arduino/pong_arduino_analogico.ino sketch opcional com valores analógicos
 | Cima/baixo não funciona | Confira `A1` e `A3` |
 | Movimento invertido | Inverta os limites no sketch ou gire a orientação física do joystick |
 | Oscilação perto do centro | Aumente a zona morta |
+| Valores ficam loucos ao encostar/mexer na montagem | Confira mau contato nos jumpers |
