@@ -2,19 +2,21 @@
    NEON PONG • V3.0
    Jogo completo + controle total pelo Arduino (Web Serial)
 
-   Controles (iguais ao infográfico):
-     Joystick 1  -> navega nos menus / move o Player 1
-     Joystick 2  -> move o Player 2 (modo 2 players)
-     Botão 1 (D2)-> voltar / cancelar  |  especial do P1 na partida
-     Botão 2 (D3)-> confirmar / start / pause
-     Botão 3 (D4)-> menu / reiniciar   |  especial do P2 (modo 2 players)
+   Controles físicos:
+     Joystick 1 -> Player 1 / seleções do Player 1
+       A0 = eixo X | A1 = eixo Y | D2 = clique SW
+
+     Joystick 2 -> Player 2 / seleções do Player 2
+       A2 = eixo X | A3 = eixo Y | D3 = clique SW
+
+   Nos menus, apenas o joystick do jogador responsável pela
+   seleção atual fica ativo. Durante a partida, os dois ficam ativos.
 
    Teclado (para testar sem Arduino):
-     W / S           -> Player 1 e navegação
-     Seta ↑ / ↓      -> Player 2 e navegação
-     Enter / Espaço  -> Botão 2
-     Esc / Backspace -> Botão 1
-     M               -> Botão 3
+     W / S + A / D        -> Player 1
+     Setas ↑ ↓ ← →        -> Player 2
+     Enter / Espaço       -> confirmar
+     Esc / Backspace      -> voltar
    ============================================================ */
 
 const $ = id => document.getElementById(id);
@@ -71,4 +73,3 @@ function specialIcon(name) {
   const data = specialData[name] || { icon: '✦', label: name };
   return `${data.icon} ${data.label}`;
 }
-
