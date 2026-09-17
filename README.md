@@ -70,7 +70,7 @@ O joystick responsável pela seleção atual navega e confirma. O clique do joys
 
 Menus com opções empilhadas usam **↑ / ↓**. Menus com opções lado a lado usam **← / →**.
 
-Na tela de nomes em 2 Players, o nome do P1 é digitado pelo J1. Ao passar para o nome do P2, o controle troca automaticamente para o J2. Nessa etapa, o clique do joystick oposto também funciona como voltar.
+Na tela de nomes em 2 Players, o nome do P1 é digitado pelo J1. Ao confirmar `OK`, o foco passa automaticamente para o campo do P2 e o controle troca para o J2. O seletor de caracteres é vertical, estilo arcade, com letras, espaço, apagar e `OK`.
 
 O site também bloqueia temporariamente um clique que ainda esteja fisicamente pressionado durante a troca de tela ou de jogador. Assim, o mesmo clique não vira acidentalmente um segundo comando, como confirmar e logo depois voltar, pausar ou ativar um especial.
 
@@ -116,11 +116,14 @@ Se os quatro eixos começarem a apresentar valores estranhos ao mesmo tempo, con
 - A bola acelera conforme as rebatidas.
 - O ângulo depende do ponto em que a bola bate na raquete.
 - Cada jogador humano começa com **1 uso do especial**.
-- Depois de **45 segundos de partida**, se o jogador já tiver gasto o uso inicial, recebe **1 uso extra**.
-- Esse bônus acontece apenas **uma vez por jogador em cada partida**. Se o primeiro uso só for gasto depois dos 45 segundos, o uso extra é liberado logo em seguida.
-- No modo 1 Player, a CPU não recebe essa recarga extra.
-- A contagem dos 45 segundos começa depois do `3, 2, 1, JÁ!` e não avança durante o pause.
-- O cronômetro da partida fica visível na tela e um aviso aparece quando um especial é recarregado.
+- A recarga de **45 segundos começa exatamente no momento em que o jogador usa o especial**.
+- Quando os 45 segundos terminam, o jogador recebe o especial novamente.
+- Depois de usar de novo, uma **nova recarga de 45 segundos** começa. Isso pode se repetir quantas vezes a duração da partida permitir.
+- A recarga é individual para cada jogador no modo 2 Players.
+- No modo 1 Player, a CPU continua sem recarga automática.
+- O tempo de recarga não avança durante o pause.
+- O HUD mostra a contagem regressiva da recarga e a barra enche até o especial ficar pronto novamente.
+- O cronômetro da partida continua visível e um aviso aparece sempre que um especial é recarregado.
 
 Especiais:
 - ⚡ **Bola Rápida**
@@ -133,12 +136,12 @@ No modo 1 Player, o especial da CPU é sorteado antes da partida.
 
 ## Recordes
 
-Os recordes agora usam resultados reais das partidas e ficam salvos no **`localStorage` do navegador**.
+Os recordes usam resultados reais das partidas e ficam salvos no **`localStorage` do navegador**.
 
 - ranking separado para **1 Player** e **2 Players**;
 - contabiliza vitórias por jogador;
 - mostra a **maior sequência de vitórias**;
-- mostra o **especial realmente mais usado**;
+- mostra o **especial realmente mais usado**, contando também os usos depois das recargas;
 - mostra o total de partidas registradas;
 - salva placar, modo, dificuldade, especiais, duração e data da partida;
 - os dados continuam depois de atualizar ou fechar a página, desde que o armazenamento desse navegador não seja apagado;
@@ -157,12 +160,13 @@ js/01-state.js                     estado geral
 js/02-flow.js                      telas e fluxo
 js/03-game.js                      lógica do Pong
 js/04-input.js                     entrada dos dois joysticks
-js/05-navigation.js                navegação dos menus
+js/05-navigation.js                navegação dos menus e nomes arcade
 js/06-loop.js                      loop principal
 js/07-serial.js                    Web Serial
 js/08-boot.js                      inicialização
 js/09-fair-polish.js               acabamento e proteções para a feira
 js/10-records.js                   recordes reais salvos no navegador
+js/11-special-recharge.js          recarga repetível 45s após cada uso
 styles.css / styles-2/3/4.css      visual
 arduino/pong_arduino.ino           sketch principal
 arduino/pong_arduino_analogico.ino sketch opcional com valores analógicos
