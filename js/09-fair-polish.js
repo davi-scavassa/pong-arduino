@@ -3,6 +3,7 @@
    - cronômetro visível da partida
    - aviso visual quando o especial recarrega aos 45s
    - guia rápido de controles antes da partida
+   - tela "Como Jogar" no menu principal
    - proteção contra clique segurado virar outro comando ao trocar de tela
    ============================================================ */
 
@@ -15,7 +16,110 @@ function fairControlContext() {
   return `ui:${currentScreen}:p${selectionPlayerForCurrentScreen()}`;
 }
 
+function ensureHowToPlayScreen() {
+  const menuButtons = document.querySelector('#menu .menu-buttons');
+
+  if (menuButtons && !$('howToPlayMenuButton')) {
+    const button = document.createElement('button');
+    button.id = 'howToPlayMenuButton';
+    button.className = 'ghost menu-action';
+    button.type = 'button';
+    button.onclick = () => showScreen('howToPlay');
+    button.innerHTML = `
+      <span class="button-copy"><b>🎮 COMO JOGAR</b><small>Controles e regras em poucos segundos</small></span>
+      <span class="arrow">→</span>
+    `;
+
+    const recordsButton = [...menuButtons.querySelectorAll('.menu-action')]
+      .find(el => (el.getAttribute('onclick') || '').includes("records"));
+
+    menuButtons.insertBefore(button, recordsButton || null);
+  }
+
+  if (!$('howToPlay')) {
+    const section = document.createElement('section');
+    section.id = 'howToPlay';
+    section.className = 'screen';
+    section.innerHTML = `
+      <div class="panel howto-panel glass">
+        <button class="back howto-action" type="button" onclick="showScreen('menu')">← Voltar</button>
+
+        <p class="step">GUIA RÁPIDO</p>
+        <h2>Como jogar</h2>
+        <p class="muted howto-intro">Em poucos segundos você já está pronto para jogar.</p>
+
+        <div class="howto-grid">
+          <article class="howto-card">
+            <span class="howto-icon">🕹</span>
+            <div>
+              <b>Nos menus</b>
+              <p>Mova o joystick indicado na tela e clique nele para confirmar. O clique do outro joystick funciona como voltar.</p>
+            </div>
+          </article>
+
+          <article class="howto-card">
+            <span class="howto-icon">1</span>
+            <div>
+              <b>Player 1</b>
+              <p>Use o eixo vertical do J1 para mover a raquete. Clique no J1 para ativar seu especial.</p>
+            </div>
+          </article>
+
+          <article class="howto-card">
+            <span class="howto-icon">2</span>
+            <div>
+              <b>Player 2</b>
+              <p>No modo 2 Players, use o J2 para mover a raquete e clique nele para ativar o especial.</p>
+            </div>
+          </article>
+
+          <article class="howto-card">
+            <span class="howto-icon">Ⅱ</span>
+            <div>
+              <b>Pause</b>
+              <p>No modo 1 Player, clique no J2 para pausar. No modo 2 Players, use o botão de pause na tela.</p>
+            </div>
+          </article>
+
+          <article class="howto-card">
+            <span class="howto-icon">🏆</span>
+            <div>
+              <b>Objetivo</b>
+              <p>O primeiro jogador a marcar 5 pontos vence a partida.</p>
+            </div>
+          </article>
+
+          <article class="howto-card">
+            <span class="howto-icon">⚡</span>
+            <div>
+              <b>Especial</b>
+              <p>Você começa com 1 uso. Se já tiver usado e a partida chegar a 45 segundos, recebe mais 1 uso.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="howto-specials">
+          <span>⚡ Bola Rápida</span>
+          <span>↕ Raquete Maior</span>
+          <span>🛡 Defesa Extra</span>
+        </div>
+
+        <button class="primary full howto-action" type="button" onclick="showScreen('menu')">ENTENDI • VOLTAR AO MENU</button>
+      </div>
+    `;
+
+    document.querySelector('.app-shell')?.appendChild(section);
+  }
+
+  navModel.howToPlay = {
+    items: () => qsa('#howToPlay .howto-action'),
+    type: 'list'
+  };
+}
+
 function ensureFairPolishUI() {
+  ensureHowToPlayScreen();
+
   const statusRow = document.querySelector('#game .match-status-row');
   const pauseButton = document.querySelector('#game .pause-btn');
 
@@ -97,6 +201,78 @@ function ensureFairPolishUI() {
         font-size: 10px;
       }
 
+      .howto-panel {
+        width: min(900px, 100%);
+      }
+
+      .howto-intro {
+        margin-bottom: 22px;
+      }
+
+      .howto-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .howto-card {
+        min-height: 112px;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid rgba(118,148,220,.14);
+        background: rgba(7,14,32,.54);
+      }
+
+      .howto-icon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        border: 1px solid rgba(53,231,255,.20);
+        background: rgba(53,231,255,.08);
+        color: #35e7ff;
+        font-size: 16px;
+        font-weight: 950;
+      }
+
+      .howto-card b {
+        display: block;
+        margin-bottom: 6px;
+        color: #f4f7ff;
+        font-size: 13px;
+      }
+
+      .howto-card p {
+        margin: 0;
+        color: #7e8dab;
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      .howto-specials {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .howto-specials span {
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(155,99,255,.22);
+        background: rgba(155,99,255,.06);
+        color: #c7b7ef;
+        font-size: 9px;
+        font-weight: 850;
+      }
+
       .bonus-toast {
         position: absolute;
         left: 50%;
@@ -132,6 +308,8 @@ function ensureFairPolishUI() {
         .match-timer { min-width: 70px; padding: 7px 9px; }
         .ready-control-guide { gap: 6px; }
         .ready-control-guide span { width: 100%; justify-content: center; }
+        .howto-grid { grid-template-columns: 1fr; }
+        .howto-card { min-height: auto; }
         .bonus-toast { top: 9%; max-width: 86%; text-align: center; }
       }
     `;
