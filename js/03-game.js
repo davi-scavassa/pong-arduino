@@ -14,6 +14,7 @@ const BALL_SPEEDUP     = 1.07;   // ganho a cada rebatida (a bola acelera no ral
 const PADDLE_SPEED     = 1.25;   // alturas de arena por segundo
 const PADDLE_BASE_H    = 0.19;   // fração da altura da arena
 const BALL_R           = 0.012;
+const BONUS_SPECIAL_AFTER_MS = 45000;
 
 const game = {
   running: false,
@@ -28,6 +29,8 @@ const game = {
   lastTime: 0,
   goalUntil: 0,
   nextServeDir: 1,
+  elapsedMs: 0,
+  clockStarted: false,
   cpu: { target: .27, nextThink: 0, usedSpecial: false }
 };
 
@@ -38,6 +41,7 @@ function newPlayer(specialName, isCpu = false) {
     y: 0.27,
     special: specialName,
     usesLeft: SPECIAL_USES,
+    bonusGranted: false,
     active: false,
     activeUntil: 0,
     hMul: 1,
@@ -68,6 +72,8 @@ function startMatch() {
   game.phase = 'goal';                       // trava a bola durante a contagem
   game.goalUntil = Number.MAX_SAFE_INTEGER;
   game.nextServeDir = Math.random() < .5 ? -1 : 1;
+  game.elapsedMs = 0;
+  game.clockStarted = false;
 
   const p2Special = state.mode === '1P' ? state.cpuSpecial : state.p2Special;
   game.p1 = newPlayer(state.p1Special, false);
@@ -91,6 +97,7 @@ function startMatch() {
   runCountdown(() => {
     if (!game.running) return;
     game.phase = 'play';
+    game.clockStarted = true;
     serveBall(game.nextServeDir);
   });
 }
@@ -189,6 +196,28 @@ function activateSpecial(who) {
   updateSpecialHud();
 }
 
+function updateLongMatchSpecialBonus() {
+  if (!game.clockStarted || game.elapsedMs < BONUS_SPECIAL_AFTER_MS) return;
+
+  const players = [game.p1];
+  if (state.mode === '2P') players.push(game.p2);
+
+  let changed = false;
+
+  players.forEach(player => {
+    if (!player || player.bonusGranted) return;
+
+    // O bônus só é liberado se o uso inicial já tiver sido gasto.
+    if (player.usesLeft < SPECIAL_USES) {
+      player.usesLeft += 1;
+      player.bonusGranted = true;
+      changed = true;
+    }
+  });
+
+  if (changed) updateSpecialHud();
+}
+
 function updateSpecials(now) {
   [game.p1, game.p2].forEach(p => {
     if (p && p.active && now >= p.activeUntil) {
@@ -216,7 +245,7 @@ function updateSpecialHud() {
     const label = p.active ? '● EM USO' : (p.usesLeft > 0 ? '● PRONTO' : '● USADO');
     if (status) status.textContent = label;
     if (uses) uses.textContent = `${p.usesLeft} USO${p.usesLeft === 1 ? '' : 'S'}`;
-    if (charge) charge.style.width = `${(p.usesLeft / SPECIAL_USES) * 100}%`;
+    if (charge) charge.style.width = `${Math.min(100, (p.usesLeft / SPECIAL_USES) * 100)}%`;
     hud.classList.toggle('used', p.usesLeft === 0 && !p.active);
     hud.classList.toggle('active-special', p.active);
   });
@@ -247,6 +276,11 @@ function bounceOnPaddle(p, newX, dirSign) {
 
 function updatePhysics(dt, now) {
   const H = dims.H;
+
+  if (game.clockStarted) {
+    game.elapsedMs += dt * 1000;
+    updateLongMatchSpecialBonus();
+  }
 
   movePaddle(game.p1, input.axis1, dt, H);
 
@@ -373,6 +407,7 @@ function endMatch(winnerIndex) {
   game.phase = 'over';
   game.running = false;
   game.ball.visible = false;
+  game.clockStarted = false;
 
   const opponent = state.mode === '1P' ? 'CPU' : state.p2;
   const winnerName = winnerIndex === 0 ? state.p1 : opponent;
@@ -421,4 +456,3 @@ function renderGame() {
   if (sl) sl.classList.toggle('on', !!game.p1.shield);
   if (sr) sr.classList.toggle('on', !!game.p2.shield);
 }
-
